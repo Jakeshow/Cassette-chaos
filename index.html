@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#16121b" />
+  <meta name="description" content="Cassette Chaos, a free open-source arcade game from Tape House Records. Catch the tapes, save the mixtape, dodge the broken reels." />
+  <title>Cassette Chaos | Tape House Records</title>
+  <style>
+    :root { color-scheme: dark; --bg:#16121b; --panel:#26202b; --cream:#f8efd9; --muted:#c8b9c1; --pink:#ff6c97; --yellow:#ffd56d; --mint:#89e4bf; --stroke:#6c5669; }
+    *,*::before,*::after { box-sizing: border-box; }
+    html { min-height:100%; scroll-behavior:smooth; }
+    body { margin:0; min-height:100vh; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color:var(--cream); background: radial-gradient(ellipse at 10% 10%, #40303e 0, transparent 38%), radial-gradient(ellipse at 90% 70%, #292d40 0, transparent 38%), var(--bg); }
+    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:10; opacity:.12; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"); }
+    a { color:var(--yellow); }
+    button { font:inherit; }
+    button:focus-visible, a:focus-visible { outline:3px solid var(--mint); outline-offset:3px; }
+    .site { max-width:1050px; margin:0 auto; padding:20px clamp(14px,4vw,36px) 44px; }
+    .brandbar { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:22px; border-bottom:2px dashed #70606e; padding-bottom:18px; }
+    .brand { color:var(--cream); text-decoration:none; text-transform:uppercase; display:flex; gap:12px; align-items:center; font-weight:1000; letter-spacing:.08em; line-height:1.18; font-size:clamp(14px,2.5vw,19px); }
+    .brand-icon { display:inline-grid; place-items:center; width:42px; height:34px; background:var(--yellow); color:#322437; border:3px solid #34253b; box-shadow:4px 4px 0 var(--pink); border-radius:6px; font-size:24px; letter-spacing:0; transform:rotate(-7deg); }
+    .edition { color:var(--mint); font-size:11px; border:1px solid var(--mint); padding:8px 10px; transform:rotate(2deg); text-align:center; }
+    .layout { display:grid; grid-template-columns:minmax(320px,480px) 1fr; align-items:start; gap:clamp(18px,4vw,38px); }
+    .game-side { min-width:0; }
+    .screen-frame { background:#26202b; border:3px solid var(--cream); box-shadow:9px 10px 0 #0c0c14, 13px 14px 0 var(--pink); padding:10px; border-radius:13px; }
+    .screen { position:relative; width:100%; aspect-ratio:21/29; border:3px solid #090a0f; overflow:hidden; background:#171826; touch-action:none; border-radius:4px; isolation:isolate; }
+    canvas { display:block; width:100%; height:100%; touch-action:none; }
+    .hud { position:absolute; top:9px; left:9px; right:9px; z-index:2; pointer-events:none; display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
+    .stat { background:#171623e9; border:2px solid #4e4653; border-radius:6px; text-align:center; padding:5px 3px; min-width:0; }
+    .stat-label { display:block; color:#cdbdc7; font-size:clamp(8px,1.8vw,11px); letter-spacing:.1em; }
+    .stat-value { display:block; font-size:clamp(13px,3vw,19px); line-height:1.35; color:var(--yellow); font-weight:900; white-space:nowrap; }
+    .stat:nth-child(2) .stat-value { color:var(--mint); }
+    .stat:nth-child(3) .stat-value { color:var(--pink); }
+    .overlay { position:absolute; inset:0; z-index:3; background:linear-gradient(0deg,#10101aef,#151420dc); display:flex; justify-content:center; align-items:center; padding:18px; }
+    .overlay.hidden { display:none; }
+    .overlay-card { max-width:335px; width:100%; padding:24px 17px; background:var(--cream); border:4px solid #1a1520; box-shadow:7px 8px 0 var(--pink); transform:rotate(-1deg); color:#271f2b; text-align:center; }
+    .ribbon { display:inline-block; background:#27202d; color:var(--mint); font-size:10px; padding:6px 9px; letter-spacing:.12em; transform:rotate(3deg); margin-bottom:8px; }
+    .overlay-card h2 { margin:9px auto 10px; font-size:clamp(30px,7vw,47px); line-height:.94; letter-spacing:-.09em; max-width:240px; transform:rotate(-2deg); }
+    .overlay-card p { font-size:12px; line-height:1.55; margin:10px 0 20px; color:#4b414b; }
+    .overlay-card .tape-mark { font-size:54px; display:block; margin:6px auto; filter:drop-shadow(3px 4px 0 #ffd56d); }
+    .primary { cursor:pointer; border:3px solid #231927; border-radius:3px; background:var(--pink); color:#201720; font-size:17px; font-weight:1000; text-transform:uppercase; letter-spacing:.05em; padding:12px 16px; width:100%; box-shadow:4px 5px 0 #322634; transition:transform .12s,box-shadow .12s; }
+    .primary:hover { transform:translate(-1px,-2px); box-shadow:5px 7px 0 #322634; }
+    .primary:active { transform:translate(3px,4px); box-shadow:1px 1px 0 #322634; }
+    .tiny-note { margin-top:16px; display:block; font-size:10px; color:#514554; }
+    .buttonbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:18px; }
+    .buttonbar button,.arrow-buttons button { background:#342b39; border:2px solid #8b7485; color:var(--cream); padding:10px 15px; font-weight:800; cursor:pointer; border-radius:4px; min-height:44px; }
+    .buttonbar button:hover,.arrow-buttons button:hover { background:#4b354b; }
+    .buttonbar button:disabled { opacity:.5; cursor:not-allowed; }
+    .arrow-buttons { display:flex; gap:12px; margin-top:14px; }
+    .arrow-buttons button { flex:1; font-size:22px; touch-action:none; user-select:none; -webkit-user-select:none; background:#503a51; }
+    .guide { padding-top:8px; }
+    .eyebrow { display:inline-block; font-size:12px; font-weight:900; letter-spacing:.12em; background:var(--mint); color:#1d2523; padding:5px 9px; transform:rotate(-2deg); }
+    h1 { font-size:clamp(44px,6.6vw,81px); line-height:.88; text-transform:uppercase; letter-spacing:-.085em; margin:22px 0 16px; text-shadow:4px 5px 0 #85405c; overflow-wrap:break-word; }
+    h1 em { color:var(--yellow); font-style:normal; display:block; }
+    .subtitle { color:var(--muted); line-height:1.55; font-size:15px; max-width:450px; }
+    .rule { border:0; border-top:2px dashed #6e5467; margin:25px 0; }
+    h3 { text-transform:uppercase; font-size:17px; letter-spacing:.02em; margin:0 0 12px; }
+    .legend { display:grid; gap:12px; padding:0; margin:0; list-style:none; }
+    .legend li { display:flex; gap:13px; align-items:center; line-height:1.35; font-size:13px; }
+    .legend-icon { display:grid; place-items:center; border:2px solid #6e5467; width:48px; height:43px; flex:0 0 48px; border-radius:7px; font-size:23px; background:#2b2736; }
+    .legend strong { display:block; color:#fff4dc; font-size:14px; }
+    .legend span.help { display:block; color:var(--muted); font-size:12px; margin-top:3px; }
+    .how { background:#281f2d; padding:18px; border-left:5px solid var(--yellow); margin-top:22px; font-size:13px; line-height:1.6; }
+    .how p { margin:0 0 9px; }
+    .how p:last-child { margin-bottom:0; }
+    .sticker { border:2px solid var(--pink); color:var(--pink); padding:7px 9px; transform:rotate(2deg); font-size:11px; text-transform:uppercase; letter-spacing:.08em; display:inline-block; margin-top:19px; }
+    footer { font-size:12px; color:var(--muted); line-height:1.5; border-top:2px dashed #705769; margin-top:38px; padding-top:18px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    footer a { font-weight:bold; }
+    @media (max-width:800px) { .layout { grid-template-columns:1fr; } .game-side { max-width:480px; margin:0 auto; width:100%; } .guide { grid-row:1; padding:0; } h1 { font-size:clamp(47px,12vw,70px); margin-top:15px; margin-bottom:9px; } .subtitle { margin:10px 0; } .guide .rule,.guide .legend,.guide h3,.guide .how,.guide .sticker { display:none; } .screen-frame { margin-top:12px; } .brandbar { margin-bottom:11px; } }
+    @media (max-width:420px) { .site { padding-inline:13px; } .screen-frame { padding:7px; border-width:2px; box-shadow:5px 6px 0 #0c0c14,8px 9px 0 var(--pink); } .overlay-card { padding:15px 12px; } .overlay-card h2 { font-size:34px; } .overlay-card p { margin-bottom:12px; } .overlay-card .tape-mark { font-size:42px; } .buttonbar { margin-top:12px; } .edition { font-size:9px; padding:6px; } }
+    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition:none !important; scroll-behavior:auto !important; } }
+  </style>
+</head>
+<body>
+<div class="site">
+  <header class="brandbar">
+    <a class="brand" href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer" aria-label="Tape House Records blog"><span class="brand-icon" aria-hidden="true">▣</span><span>Tape House<br />Records</span></a>
+    <span class="edition">FREE TO PLAY<br />OPEN SOURCE / VOL. 01</span>
+  </header>
+  <main class="layout">
+    <section class="game-side" aria-label="Cassette Chaos arcade game">
+      <div class="screen-frame">
+        <div class="screen" id="gameScreen">
+          <canvas id="game" width="420" height="580" aria-label="Game field with falling cassette tapes. Drag or use arrow keys to move the tape deck to catch them.">Your browser needs canvas support to play.</canvas>
+          <div class="hud" aria-live="off">
+            <div class="stat"><span class="stat-label">SCORE</span><span class="stat-value" id="score">0000</span></div>
+            <div class="stat"><span class="stat-label">LIVES</span><span class="stat-value" id="lives">♥ ♥ ♥</span></div>
+            <div class="stat"><span class="stat-label">BEST</span><span class="stat-value" id="best">0000</span></div>
+          </div>
+          <div class="overlay" id="overlay">
+            <div class="overlay-card">
+              <span class="ribbon" id="overlayRibbon">TAPE HOUSE ARCADE PRESENTS</span>
+              <span class="tape-mark" id="overlayIcon" aria-hidden="true">📼</span>
+              <h2 id="overlayTitle">CASSETTE CHAOS!</h2>
+              <p id="overlayText">Save the mixtape! Catch good cassettes, grab coffee power-ups, and avoid broken tapes. Miss 3 and the set is over.</p>
+              <button class="primary" id="mainButton" type="button">▶ PLAY THE GAME</button>
+              <span class="tiny-note" id="overlayHint">DRAG TO MOVE • OR USE ← → / A D</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="buttonbar" aria-label="Game actions">
+        <button type="button" id="pauseButton" disabled>Ⅱ PAUSE</button>
+        <button type="button" id="soundButton" aria-pressed="true">♫ SOUND ON</button>
+        <span id="powerIndicator" role="status" style="color:var(--yellow);font-size:12px;flex:1;text-align:right;">READY TO ROCK</span>
+      </div>
+      <div class="arrow-buttons" aria-label="Touch steering controls">
+        <button type="button" id="leftButton" aria-label="Move left">◀ LEFT</button>
+        <button type="button" id="rightButton" aria-label="Move right">RIGHT ▶</button>
+      </div>
+    </section>
+    <aside class="guide">
+      <span class="eyebrow">AN ARCADE GAME FOR THE UNDERGROUND</span>
+      <h1>Cassette <em>Chaos!</em></h1>
+      <p class="subtitle">The mixtape is falling apart. Literally. Run the tape deck, rescue the good tunes, and keep the DIY spirit alive. No algorithms. No sign-ups. Just one more round.</p>
+      <hr class="rule" />
+      <h3>Know your drops</h3>
+      <ul class="legend">
+        <li><span class="legend-icon" aria-hidden="true">📼</span><span><strong>Good cassette • +10</strong><span class="help">Catch it before it hits the floor.</span></span></li>
+        <li><span class="legend-icon" aria-hidden="true">✨</span><span><strong>Gold tape • +50</strong><span class="help">Rare find at the bottom of the bargain bin.</span></span></li>
+        <li><span class="legend-icon" aria-hidden="true">☕</span><span><strong>Coffee • double points</strong><span class="help">Seven glorious seconds of caffeine.</span></span></li>
+        <li><span class="legend-icon" aria-hidden="true">💥</span><span><strong>Broken tape • lose a life</strong><span class="help">Don't let it ruin your set.</span></span></li>
+      </ul>
+      <div class="how"><p><strong>📱 PHONE:</strong> Drag your finger across the game, or hold the left/right buttons.</p><p><strong>⌨️ COMPUTER:</strong> Move your mouse, use ← → or A / D. Press Space or P to pause.</p><p><strong>THE RULE:</strong> Miss a regular cassette or catch a broken one and you lose a life. You start with three.</p></div>
+      <span class="sticker">★ DIY UNTIL THE TAPE RUNS OUT ★</span>
+    </aside>
+  </main>
+  <footer>
+    <span>© 2026 Tape House Records • The game code is open source under the MIT License.</span>
+    <a href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer">VISIT THE TAPE HOUSE BLOG ↗</a>
+  </footer>
+</div>
+<script>
+(() => {
+  'use strict';
+  // MIT licensed. All graphics and sounds are generated by code, with no external assets.
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const W = 420, H = 580, deckY = 509;
+  const $ = id => document.getElementById(id);
+  const ui = {
+    score: $('score'), lives: $('lives'), best: $('best'), overlay: $('overlay'),
+    ribbon: $('overlayRibbon'), icon: $('overlayIcon'), title: $('overlayTitle'),
+    description: $('overlayText'), main: $('mainButton'), hint: $('overlayHint'),
+    pause: $('pauseButton'), sound: $('soundButton'), power: $('powerIndicator')
+  };
+  const colors = ['#ff6c97','#89e4bf','#ffd56d','#9da8ff','#feaa79'];
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let mode = 'ready';
+  let score = 0, lives = 3, best = 0, elapsed = 0, spawnClock = 0, streak = 0, coffeeTime = 0;
+  let items = [], bursts = [], last = 0, animId = 0, audio = null, soundOn = true;
+  let steer = 0, keyboardSteer = 0, buttonSteer = 0;
+  let deckX = W / 2, targetX = deckX;
+  try { best = Number(localStorage.getItem('tapehouse_cassette_chaos_best')) || 0; } catch (_) {}
+  function clamp(n,a,b) { return Math.max(a,Math.min(b,n)); }
+  function rand(a,b) { return a + Math.random()*(b-a); }
+  function display() {
+    ui.score.textContent = String(score).padStart(4,'0');
+    ui.best.textContent = String(Math.max(best,score)).padStart(4,'0');
+    ui.lives.textContent = '♥ '.repeat(lives).trim() || '× × ×';
+    ui.power.textContent = coffeeTime > 0 ? '☕ 2X SCORE ' + Math.ceil(coffeeTime) + 's' : (mode === 'running' ? 'STREAK ×' + streak : 'READY TO ROCK');
+  }
+  function setOverlay(ribbon,icon,title,description,button,hint) {
+    ui.ribbon.textContent=ribbon; ui.icon.textContent=icon; ui.title.textContent=title;
+    ui.description.textContent=description; ui.main.textContent=button; ui.hint.textContent=hint;
+    ui.overlay.classList.remove('hidden');
+  }
+  function hideOverlay() { ui.overlay.classList.add('hidden'); }
+  function saveBest() { if (score>best) { best=score; try { localStorage.setItem('tapehouse_cassette_chaos_best',String(best)); } catch (_) {} } }
+  function start() {
+    score=0; lives=3; elapsed=0; spawnClock=0; streak=0; coffeeTime=0;
+    items=[]; bursts=[]; deckX=W/2; targetX=deckX; buttonSteer=keyboardSteer=steer=0;
+    mode='running'; hideOverlay(); ui.pause.disabled=false; ui.pause.textContent='Ⅱ PAUSE'; display();
+    sound(392,'triangle',0.08,.055); sound(587,'triangle',0.11,.04,.095);
+  }
+  function gameOver() {
+    mode='over'; ui.pause.disabled=true; saveBest(); display();
+    sound(247,'sawtooth',0.17,.065); sound(196,'triangle',0.18,.055,.11);
+    setOverlay('THE SIDE A IS OVER','💔','GAME OVER',
+      'You rescued '+score+' points worth of mixtapes! Your personal best: '+best+'. One more spin?',
+      '↻ TRY AGAIN','NO QUARTERS REQUIRED • ALWAYS FREE');
+  }
+  function pause() {
+    if (mode==='running') {
+      mode='paused'; ui.pause.textContent='▶ RESUME';
+      setOverlay('TAPE DECK ON HOLD','⏸','PAUSED','The punk rock can wait. Your tapes will be right where you left them.','▶ KEEP PLAYING','PRESS SPACE OR P TO RESUME');
+    } else if (mode==='paused') {
+      mode='running'; ui.pause.textContent='Ⅱ PAUSE'; hideOverlay();
+    }
+    display();
+  }
+  function playAction() { if (mode==='paused') pause(); else start(); }
+  ui.main.addEventListener('click',playAction);
+  ui.pause.addEventListener('click',pause);
+  ui.sound.addEventListener('click',()=>{ soundOn=!soundOn; ui.sound.textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF'; ui.sound.setAttribute('aria-pressed',String(soundOn)); if (soundOn) sound(440,'sine',0.05,.04); });
+  function sound(freq,wave='sine',duration=.09,volume=.06,delay=0) {
+    if (!soundOn) return;
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      if (!audio) audio = new AudioContext();
+      if (audio.state==='suspended') audio.resume().catch(()=>{});
+      const osc=audio.createOscillator(), gain=audio.createGain(), t=audio.currentTime+delay;
+      osc.type=wave; osc.frequency.setValueAtTime(freq,t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.8),t+duration);
+      gain.gain.setValueAtTime(.0001,t); gain.gain.exponentialRampToValueAtTime(volume,t+.012);
+      gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
+      osc.connect(gain); gain.connect(audio.destination); osc.start(t); osc.stop(t+duration+.015);
+    } catch (_) { /* Gameplay must work even if audio is blocked. */ }
+  }
+  function pointerX(event) {
+    const box=canvas.getBoundingClientRect();
+    return (event.clientX-box.left)*W/box.width;
+  }
+  canvas.addEventListener('pointerdown',event=>{
+    if (mode!=='running') return;
+    targetX=clamp(pointerX(event),44,W-44);
+    try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
+  });
+  canvas.addEventListener('pointermove',event=>{
+    if (mode!=='running' || (event.pointerType==='touch' && event.buttons===0)) return;
+    targetX=clamp(pointerX(event),44,W-44);
+  });
+  const keys = new Set();
+  function setKeySteer() { keyboardSteer=(keys.has('arrowright')||keys.has('d')?1:0)-(keys.has('arrowleft')||keys.has('a')?1:0); }
+  document.addEventListener('keydown',event=>{
+    const k=event.key.toLowerCase();
+    if (['arrowleft','arrowright',' ','arrowup','arrowdown'].includes(k)) event.preventDefault();
+    if (['arrowleft','arrowright','a','d'].includes(k)) { keys.add(k); setKeySteer(); }
+    if (!event.repeat && (k===' '||k==='p')) { if (mode==='running'||mode==='paused') pause(); }
+    if (!event.repeat && k==='enter' && (mode==='ready'||mode==='over')) start();
+  });
+  document.addEventListener('keyup',event=>{ keys.delete(event.key.toLowerCase()); setKeySteer(); });
+  window.addEventListener('blur',()=>{ keys.clear(); setKeySteer(); buttonSteer=0; if(mode==='running')pause(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.hidden && mode==='running')pause(); });
+  const hold=(node,dir)=>{
+    node.addEventListener('pointerdown',event=>{ event.preventDefault(); buttonSteer=dir; try{node.setPointerCapture(event.pointerId);}catch(_){} });
+    for(const action of ['pointerup','pointercancel','lostpointercapture']) node.addEventListener(action,()=>{ if(buttonSteer===dir)buttonSteer=0; });
+  };
+  hold($('leftButton'),-1); hold($('rightButton'),1);
+  function spawn() {
+    const r=Math.random();
+    const type = r<.70?'tape':r<.85?'broken':r<.94?'gold':'coffee';
+    const radius= type==='coffee'?20:29;
+    const x=rand(radius+9,W-radius-9);
+    items.push({type,x,y:-45,rot:rand(-.3,.3),vx:rand(-.9,.9),phase:rand(0,7),color:colors[Math.floor(rand(0,colors.length))],speed:rand(.85,1.15),radius});
+  }
+  function burst(x,y,label,color) {
+    bursts.push({x,y,label,color,life:1});
+  }
+  function hit(item) {
+    if (item.type==='broken') {
+      lives--; streak=0; sound(125,'sawtooth',.19,.10); burst(item.x,deckY-25,'-1 LIFE','#ff6c97');
+      if(lives<=0){gameOver();return;}
+    } else if (item.type==='coffee') {
+      coffeeTime=7; sound(570,'sine',.07,.07); sound(900,'sine',.11,.06,.065); burst(item.x,deckY-20,'2× COFFEE!','#ffd56d');
+    } else {
+      const points=(item.type==='gold'?50:10)*(coffeeTime>0?2:1);
+      score+=points; streak++;
+      sound(item.type==='gold'?760:440+Math.min(streak,7)*35,'triangle',.085,.045);
+      burst(item.x,deckY-20,'+'+points,item.type==='gold'?'#ffd56d':'#89e4bf');
+    }
+    display();
+  }
+  function missed(item) {
+    if(item.type==='tape') {
+      lives--; streak=0; sound(171,'triangle',.16,.07);
+      burst(item.x,H-38,'MISSED!','#ff6c97');
+      if(lives<=0){gameOver();return;}
+      display();
+    }
+  }
+  function update(dt) {
+    if (mode!=='running') return;
+    elapsed+=dt; coffeeTime=Math.max(0,coffeeTime-dt);
+    steer=clamp(keyboardSteer+buttonSteer,-1,1);
+    if(steer) targetX+=steer*370*dt;
+    targetX=clamp(targetX,48,W-48);
+    deckX+=(targetX-deckX)*Math.min(1,dt*22);
+    spawnClock+=dt;
+    const spawnEvery=Math.max(.56,1.12-elapsed*.003);
+    if(spawnClock>=spawnEvery){spawnClock-=spawnEvery;spawn();}
+    for(let i=items.length-1;i>=0;i--) {
+      const it=items[i];
+      it.y+=(149+Math.min(elapsed*1.15,140))*it.speed*dt;
+      it.phase+=dt*2.2;
+      // Catch while the falling object's lower edge overlaps the tape deck's slot.
+      if(it.y>=deckY-27 && it.y<=deckY+14 && Math.abs(it.x-deckX)<(it.type==='coffee'?59:61)) {
+        items.splice(i,1); hit(it); if(mode==='over') return; continue;
+      }
+      if(it.y>H+35){items.splice(i,1);missed(it);if(mode==='over')return;}
+    }
+    for(let i=bursts.length-1;i>=0;i--) {bursts[i].life-=dt*1.2;bursts[i].y-=dt*36;if(bursts[i].life<=0)bursts.splice(i,1);}
+    ui.power.textContent=coffeeTime>0?'☕ 2X SCORE '+Math.ceil(coffeeTime)+'s':'STREAK ×'+streak;
+  }
+  function roundRect(x,y,w,h,r,fill,stroke,line=2) {
+    ctx.beginPath();ctx.roundRect(x,y,w,h,r);
+    if(fill){ctx.fillStyle=fill;ctx.fill();}
+    if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}
+  }
+  function drawBackground(t) {
+    const grad=ctx.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0,'#1d1c31');grad.addColorStop(1,'#121922');
+    ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+    ctx.lineWidth=1;
+    ctx.strokeStyle='#b4b8ff13';
+    for(let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    for(let j=0;j<15;j++){
+      const xx=(j*71+23)%W;
+      const yy=(j*127+40+(reduceMotion?0:t*10*(j%3+1)))%H;
+      ctx.fillStyle=j%2?'#ffd56d33':'#f8efd92b';ctx.fillRect(xx,yy,2,2);
+    }
+    roundRect(15,94,91,25,3,'#2b2536','#86667f',1);
+    ctx.fillStyle='#ffc6aa';ctx.font='bold 11px monospace';ctx.fillText('SIDE A / 01',24,111);
+    ctx.textAlign='right';ctx.fillStyle='#927e93';ctx.fillText('45 RPM? NAH.',W-17,113);ctx.textAlign='left';
+    ctx.fillStyle='#232134';ctx.fillRect(0,H-45,W,45);
+    ctx.fillStyle='#ff6c9744';ctx.fillRect(0,H-47,W,2);
+    for(let x=14;x<W;x+=28){ctx.fillStyle='#f8efd913';ctx.fillRect(x,H-25,15,2);}
+  }
+  function drawTape(it) {
+    ctx.save();ctx.translate(it.x,it.y);ctx.rotate(it.rot+Math.sin(it.phase)*.045);
+    if(it.type==='coffee') {drawCoffee();ctx.restore();return;}
+    const gold=it.type==='gold',broken=it.type==='broken';
+    const body=broken?'#aab1ba':(gold?'#ffd56d':it.color);
+    ctx.shadowBlur=gold?22:0;ctx.shadowColor='#ffd56d';
+    roundRect(-31,-21,62,42,5,'#191722','#0a0b10',3);
+    roundRect(-27,-17,54,30,3,body,'#403544',2);
+    roundRect(-23,-12,46,13,2,broken?'#5c5363':'#f8efd9','#3a2e40',1.5);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#262330';
+    ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.fillText(gold?'RARE!':broken?'BROKEN':'TAPE HOUSE',0,-3);
+    for(const xx of [-13,13]){
+      ctx.fillStyle='#22212e';ctx.beginPath();ctx.arc(xx,9,7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#eee9db';ctx.beginPath();ctx.arc(xx,9,3,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#f8efd9';ctx.fillRect(-5,8,10,4);
+    ctx.beginPath();ctx.moveTo(-15,18);ctx.lineTo(15,18);ctx.lineTo(19,22);ctx.lineTo(-19,22);ctx.closePath();ctx.fillStyle='#1f1a29';ctx.fill();
+    if(broken) {
+      ctx.beginPath();ctx.moveTo(-26,-21);ctx.lineTo(-6,-3);ctx.lineTo(-13,8);ctx.lineTo(13,21);
+      ctx.strokeStyle='#ff6c97';ctx.lineWidth=4;ctx.stroke();
+      ctx.fillStyle='#ff6c97';ctx.font='bold 21px monospace';ctx.fillText('!',23,-15);
+    }
+    if(gold){ctx.fillStyle='#fff5d0';ctx.font='bold 18px monospace';ctx.fillText('✦',31,-15);}
+    ctx.textAlign='left';ctx.restore();
+  }
+  function drawCoffee() {
+    ctx.shadowBlur=12;ctx.shadowColor='#ffd56d88';
+    roundRect(-16,-16,32,32,4,'#ffe1a3','#513a3a',3);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#49333c';ctx.beginPath();ctx.ellipse(0,-15,16,5,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#ffe1a3';ctx.lineWidth=5;ctx.beginPath();ctx.arc(15,0,10,-Math.PI/2,Math.PI/2);ctx.stroke();
+    ctx.fillStyle='#50393d';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('2X',0,7);ctx.textAlign='left';
+    ctx.strokeStyle='#f7efda';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-8,-22);ctx.quadraticCurveTo(-13,-28,-7,-35);ctx.moveTo(5,-22);ctx.quadraticCurveTo(1,-29,8,-35);ctx.stroke();
+  }
+  function drawDeck(t) {
+    ctx.save();ctx.translate(deckX,deckY);
+    ctx.shadowColor='#ff6c9766';ctx.shadowBlur=17;
+    roundRect(-48,-9,96,62,9,'#ff6c97','#191524',4);
+    ctx.shadowBlur=0;
+    roundRect(-37,-4,74,17,3,'#1b1723','#ffd56d',2);
+    ctx.fillStyle='#ffd56d';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('INSERT TAPE',0,8);
+    roundRect(-40,24,80,20,3,'#f8efd9','#302536',2);
+    for(let j=0;j<9;j++) {ctx.fillStyle='#2e2331';ctx.fillRect(-32+j*8,29,3,10);}
+    ctx.fillStyle='#382937';ctx.beginPath();ctx.arc(-36,48,4,0,7);ctx.arc(36,48,4,0,7);ctx.fill();
+    // An on-deck neon arrow shows the active capture area.
+    if(!reduceMotion){ctx.globalAlpha=.35+.18*Math.sin(t*6);ctx.fillStyle='#89e4bf';ctx.fillRect(-30,-15,60,3);}
+    ctx.restore();
+  }
+  function draw(t) {
+    drawBackground(t);
+    for(const it of items) drawTape(it);
+    drawDeck(t);
+    for(const b of bursts){ctx.save();ctx.globalAlpha=clamp(b.life,0,1);ctx.textAlign='center';ctx.font='bold 17px monospace';ctx.fillStyle=b.color;ctx.fillText(b.label,b.x,b.y);ctx.restore();}
+    if(coffeeTime>0){ctx.strokeStyle='#ffd56d';ctx.lineWidth=4;ctx.strokeRect(4,4,W-8,H-8);}
+  }
+  function frame(time) {
+    const dt=Math.min((time-last)/1000 || 0,.042);last=time;
+    update(dt);draw(time/1000);animId=requestAnimationFrame(frame);
+  }
+  display();
+  animId=requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
