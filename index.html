@@ -1,402 +1,409 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#16121b" />
-  <meta name="description" content="Cassette Chaos, a free open-source arcade game from Tape House Records. Catch the tapes, save the mixtape, dodge the broken reels." />
-  <title>Cassette Chaos | Tape House Records</title>
-  <style>
-    :root { color-scheme: dark; --bg:#16121b; --panel:#26202b; --cream:#f8efd9; --muted:#c8b9c1; --pink:#ff6c97; --yellow:#ffd56d; --mint:#89e4bf; --stroke:#6c5669; }
-    *,*::before,*::after { box-sizing: border-box; }
-    html { min-height:100%; scroll-behavior:smooth; }
-    body { margin:0; min-height:100vh; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; color:var(--cream); background: radial-gradient(ellipse at 10% 10%, #40303e 0, transparent 38%), radial-gradient(ellipse at 90% 70%, #292d40 0, transparent 38%), var(--bg); }
-    body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:10; opacity:.12; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E"); }
-    a { color:var(--yellow); }
-    button { font:inherit; }
-    button:focus-visible, a:focus-visible { outline:3px solid var(--mint); outline-offset:3px; }
-    .site { max-width:1050px; margin:0 auto; padding:20px clamp(14px,4vw,36px) 44px; }
-    .brandbar { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:22px; border-bottom:2px dashed #70606e; padding-bottom:18px; }
-    .brand { color:var(--cream); text-decoration:none; text-transform:uppercase; display:flex; gap:12px; align-items:center; font-weight:1000; letter-spacing:.08em; line-height:1.18; font-size:clamp(14px,2.5vw,19px); }
-    .brand-icon { display:block; width:58px; height:58px; object-fit:cover; border:2px solid var(--cream); box-shadow:4px 4px 0 var(--pink); border-radius:8px; transform:rotate(-5deg); flex:0 0 58px; }
-    .edition { color:var(--mint); font-size:11px; border:1px solid var(--mint); padding:8px 10px; transform:rotate(2deg); text-align:center; }
-    .layout { display:grid; grid-template-columns:minmax(320px,480px) 1fr; align-items:start; gap:clamp(18px,4vw,38px); }
-    .game-side { min-width:0; }
-    .screen-frame { background:#26202b; border:3px solid var(--cream); box-shadow:9px 10px 0 #0c0c14, 13px 14px 0 var(--pink); padding:10px; border-radius:13px; }
-    .screen { position:relative; width:100%; aspect-ratio:21/29; border:3px solid #090a0f; overflow:hidden; background:#171826; touch-action:none; border-radius:4px; isolation:isolate; }
-    canvas { display:block; width:100%; height:100%; touch-action:none; }
-    .hud { position:absolute; top:9px; left:9px; right:9px; z-index:2; pointer-events:none; display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; }
-    .stat { background:#171623e9; border:2px solid #4e4653; border-radius:6px; text-align:center; padding:5px 3px; min-width:0; }
-    .stat-label { display:block; color:#cdbdc7; font-size:clamp(8px,1.8vw,11px); letter-spacing:.1em; }
-    .stat-value { display:block; font-size:clamp(13px,3vw,19px); line-height:1.35; color:var(--yellow); font-weight:900; white-space:nowrap; }
-    .stat:nth-child(2) .stat-value { color:var(--mint); }
-    .stat:nth-child(3) .stat-value { color:var(--pink); }
-    .overlay { position:absolute; inset:0; z-index:3; background:linear-gradient(0deg,#10101aef,#151420dc); display:flex; justify-content:center; align-items:center; padding:18px; }
-    .overlay.hidden { display:none; }
-    .overlay-card { max-width:335px; width:100%; padding:24px 17px; background:var(--cream); border:4px solid #1a1520; box-shadow:7px 8px 0 var(--pink); transform:rotate(-1deg); color:#271f2b; text-align:center; }
-    .ribbon { display:inline-block; background:#27202d; color:var(--mint); font-size:10px; padding:6px 9px; letter-spacing:.12em; transform:rotate(3deg); margin-bottom:8px; }
-    .overlay-card h2 { margin:9px auto 10px; font-size:clamp(30px,7vw,47px); line-height:.94; letter-spacing:-.09em; max-width:240px; transform:rotate(-2deg); }
-    .overlay-card p { font-size:12px; line-height:1.55; margin:10px 0 20px; color:#4b414b; }
-    .cover-art { display:block; width:104px; height:104px; object-fit:cover; margin:4px auto 10px; border:3px solid #1a1520; box-shadow:4px 4px 0 var(--pink); border-radius:8px; transform:rotate(3deg); }
-    .overlay-card .tape-mark { font-size:54px; display:block; margin:6px auto; filter:drop-shadow(3px 4px 0 #ffd56d); }
-    .primary { cursor:pointer; border:3px solid #231927; border-radius:3px; background:var(--pink); color:#201720; font-size:17px; font-weight:1000; text-transform:uppercase; letter-spacing:.05em; padding:12px 16px; width:100%; box-shadow:4px 5px 0 #322634; transition:transform .12s,box-shadow .12s; }
-    .primary:hover { transform:translate(-1px,-2px); box-shadow:5px 7px 0 #322634; }
-    .primary:active { transform:translate(3px,4px); box-shadow:1px 1px 0 #322634; }
-    .tiny-note { margin-top:16px; display:block; font-size:10px; color:#514554; }
-    .buttonbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:18px; }
-    .buttonbar button,.arrow-buttons button { background:#342b39; border:2px solid #8b7485; color:var(--cream); padding:10px 15px; font-weight:800; cursor:pointer; border-radius:4px; min-height:44px; }
-    .buttonbar button:hover,.arrow-buttons button:hover { background:#4b354b; }
-    .buttonbar button:disabled { opacity:.5; cursor:not-allowed; }
-    .arrow-buttons { display:flex; gap:12px; margin-top:14px; }
-    .arrow-buttons button { flex:1; font-size:22px; touch-action:none; user-select:none; -webkit-user-select:none; background:#503a51; }
-    .guide { padding-top:8px; }
-    .eyebrow { display:inline-block; font-size:12px; font-weight:900; letter-spacing:.12em; background:var(--mint); color:#1d2523; padding:5px 9px; transform:rotate(-2deg); }
-    h1 { font-size:clamp(44px,6.6vw,81px); line-height:.88; text-transform:uppercase; letter-spacing:-.085em; margin:22px 0 16px; text-shadow:4px 5px 0 #85405c; overflow-wrap:break-word; }
-    h1 em { color:var(--yellow); font-style:normal; display:block; }
-    .subtitle { color:var(--muted); line-height:1.55; font-size:15px; max-width:450px; }
-    .rule { border:0; border-top:2px dashed #6e5467; margin:25px 0; }
-    h3 { text-transform:uppercase; font-size:17px; letter-spacing:.02em; margin:0 0 12px; }
-    .legend { display:grid; gap:12px; padding:0; margin:0; list-style:none; }
-    .legend li { display:flex; gap:13px; align-items:center; line-height:1.35; font-size:13px; }
-    .legend-icon { display:grid; place-items:center; border:2px solid #6e5467; width:48px; height:43px; flex:0 0 48px; border-radius:7px; font-size:23px; background:#2b2736; }
-    .legend strong { display:block; color:#fff4dc; font-size:14px; }
-    .legend span.help { display:block; color:var(--muted); font-size:12px; margin-top:3px; }
-    .how { background:#281f2d; padding:18px; border-left:5px solid var(--yellow); margin-top:22px; font-size:13px; line-height:1.6; }
-    .how p { margin:0 0 9px; }
-    .how p:last-child { margin-bottom:0; }
-    .sticker { border:2px solid var(--pink); color:var(--pink); padding:7px 9px; transform:rotate(2deg); font-size:11px; text-transform:uppercase; letter-spacing:.08em; display:inline-block; margin-top:19px; }
-    footer { font-size:12px; color:var(--muted); line-height:1.5; border-top:2px dashed #705769; margin-top:38px; padding-top:18px; display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-    footer a { font-weight:bold; }
-    @media (max-width:800px) { .layout { grid-template-columns:1fr; } .game-side { max-width:480px; margin:0 auto; width:100%; } .guide { grid-row:1; padding:0; } h1 { font-size:clamp(47px,12vw,70px); margin-top:15px; margin-bottom:9px; } .subtitle { margin:10px 0; } .guide .rule,.guide .legend,.guide h3,.guide .how,.guide .sticker { display:none; } .screen-frame { margin-top:12px; } .brandbar { margin-bottom:11px; } }
-    @media (max-width:420px) { .site { padding-inline:13px; } .screen-frame { padding:7px; border-width:2px; box-shadow:5px 6px 0 #0c0c14,8px 9px 0 var(--pink); } .overlay-card { padding:15px 12px; } .overlay-card h2 { font-size:34px; } .overlay-card p { margin-bottom:12px; } .overlay-card .tape-mark { font-size:42px; } .buttonbar { margin-top:12px; } .edition { font-size:9px; padding:6px; } }
-    @media (prefers-reduced-motion: reduce) { *,*::before,*::after { transition:none !important; scroll-behavior:auto !important; } }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16121b">
+<meta name="description" content="Explore, build, quest, and fight your way through the Tape Lands in Cassette Chaos.">
+<title>Cassette Chaos: The Tape Lands | Tape House Records</title>
+<style>
+:root{color-scheme:dark;--bg:#16121b;--panel:#26202b;--cream:#f8efd9;--muted:#c8b9c1;--pink:#ff6c97;--yellow:#ffd56d;--mint:#89e4bf;--stroke:#6c5669}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 10% 10%,#40303e 0,transparent 38%),radial-gradient(ellipse at 90% 70%,#292d40 0,transparent 38%),var(--bg);color:var(--cream);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+.site{max-width:1200px;margin:0 auto;padding:16px clamp(12px,3vw,30px) 32px}
+.brandbar{display:flex;align-items:center;gap:12px;border-bottom:2px dashed #70606e;padding:0 0 14px;margin-bottom:15px}
+.brandbar img{width:52px;height:52px;object-fit:cover;border:2px solid var(--cream);box-shadow:4px 4px 0 var(--pink);border-radius:7px;transform:rotate(-4deg)}
+.brand-copy{font-weight:1000;text-transform:uppercase;letter-spacing:.08em;line-height:1.1}.brand-copy small{display:block;color:var(--mint);font-size:10px;letter-spacing:.12em;margin-top:5px}
+.tagline{margin-left:auto;text-align:right;color:var(--yellow);font-size:11px;line-height:1.5}
+h1{font-size:clamp(28px,5vw,48px);line-height:.95;letter-spacing:-.08em;text-transform:uppercase;margin:4px 0 14px;text-shadow:3px 4px 0 #85405c}h1 em{font-style:normal;color:var(--yellow)}
+.intro{display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:12px}.intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.5;max-width:680px}
+.layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(270px,.8fr);gap:16px;align-items:start}
+.game-shell,.panel{background:#211b27;border:2px solid #887080;border-radius:10px;box-shadow:5px 6px 0 #0c0c14}
+.game-shell{padding:8px}.hud{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:7px}
+.stat{background:#171623;border:1px solid #574857;border-radius:5px;padding:6px 5px;text-align:center}.stat label{display:block;font-size:9px;color:var(--muted);letter-spacing:.12em}.stat strong{display:block;color:var(--yellow);font-size:15px;margin-top:3px;white-space:nowrap}
+#world{display:block;width:100%;height:auto;aspect-ratio:704/480;background:#42683c;border:3px solid #0b0d11;border-radius:4px;image-rendering:pixelated;touch-action:none}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:245px;margin:auto;width:100%}
+.pad button,.action-row button,.panel button{min-height:41px;border:2px solid #8b7485;background:#342b39;border-radius:5px;font-weight:900}.pad button{font-size:18px;touch-action:none;user-select:none;-webkit-user-select:none}.pad .empty{visibility:hidden}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}.action-row button{background:#49334a;touch-action:manipulation}.action-row button:first-child{background:#5a4131;color:var(--yellow)}.action-row button:last-child{background:#463753;color:#ff91ad}
+.hint{margin:9px 2px 2px;color:var(--muted);font-size:10px;line-height:1.5;text-align:center}
+.side{display:grid;gap:10px}.panel{padding:12px}.panel h2{margin:0 0 8px;font-size:15px;text-transform:uppercase;letter-spacing:.04em;color:var(--yellow)}.panel h3{font-size:12px;margin:9px 0 4px;color:var(--mint)}.panel p{font-size:11px;line-height:1.5;color:var(--muted);margin:5px 0}
+.bag{display:grid;grid-template-columns:1fr 1fr;gap:5px}.item{background:#171623;border:1px solid #544554;border-radius:4px;padding:6px;font-size:11px;display:flex;justify-content:space-between}.item b{color:var(--mint)}
+.quest{border-left:3px solid var(--mint);padding:4px 0 4px 8px;margin:7px 0}.quest.done{border-color:var(--yellow)}.quest strong{font-size:11px}.quest span{display:block;font-size:10px;color:var(--muted);line-height:1.4;margin-top:3px}
+.recipe{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:6px 0;padding:6px;background:#171623;border-radius:4px;font-size:10px}.recipe button{min-height:32px;padding:4px 8px;font-size:10px;white-space:nowrap}
+.feed{min-height:38px;color:var(--cream)!important;background:#171623;border-radius:4px;padding:7px!important;border:1px solid #463947}
+.overlay{position:fixed;inset:0;z-index:10;background:#100d16dd;display:flex;align-items:center;justify-content:center;padding:18px}.overlay.hidden{display:none}.card{max-width:440px;width:100%;padding:20px;background:var(--cream);color:#271f2b;border:4px solid #1a1520;box-shadow:7px 8px 0 var(--pink);text-align:center;transform:rotate(-1deg)}.card img{width:110px;height:110px;object-fit:cover;border:3px solid #271f2b;box-shadow:4px 4px 0 var(--pink);border-radius:8px}.ribbon{display:block;color:#28634d;font-weight:900;font-size:10px;letter-spacing:.12em;margin-bottom:8px}.card h2{font-size:clamp(29px,7vw,42px);line-height:.94;letter-spacing:-.08em;margin:13px 0 8px}.card p{font-size:12px;color:#4b414b;line-height:1.55}.primary{width:100%;min-height:48px;margin-top:10px;background:var(--pink);color:#201720;border:3px solid #231927;box-shadow:4px 5px 0 #322634;font-weight:1000;text-transform:uppercase}
+.dialogue{position:fixed;z-index:8;inset:0;background:#100d16a8;display:grid;place-items:center;padding:15px}.dialogue[hidden]{display:none}.dialog-card{width:min(420px,100%);background:var(--cream);color:#271f2b;border:4px solid #1a1520;box-shadow:6px 7px 0 var(--pink);padding:18px}.dialog-card h2{margin:0;color:#28634d}.dialog-card p{font-size:12px;line-height:1.55}.dialog-actions{display:flex;gap:8px}.dialog-actions button{flex:1;min-height:42px;border:2px solid #241a2a;background:var(--pink);color:#241a2a;font-weight:900}.dialog-actions button:last-child{background:#d4c8b7}
+footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-top:12px;font-size:11px;line-height:1.6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}footer a{color:var(--yellow)}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.side{grid-template-columns:1fr 1fr}.side .panel:last-child{grid-column:1/-1}.intro{display:block}.intro p{margin-top:5px}}
+@media(max-width:520px){.site{padding:10px 9px 24px}.brandbar{margin-bottom:10px}.brandbar img{width:44px;height:44px}.tagline{font-size:9px}.intro{margin-bottom:9px}h1{font-size:34px;margin:5px 0 8px}.intro p{font-size:11px}.layout{gap:10px}.game-shell{padding:5px}.hud{gap:3px}.stat{padding:5px 2px}.stat label{font-size:8px}.stat strong{font-size:12px}.controls{grid-template-columns:1fr;gap:6px}.pad{max-width:230px}.action-row{max-width:430px;margin:auto;width:100%}.side{grid-template-columns:1fr}.side .panel:last-child{grid-column:auto}.panel{padding:10px}.panel h2{font-size:14px}}
+</style>
 </head>
 <body>
 <div class="site">
-  <header class="brandbar">
-    <a class="brand" href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer" aria-label="Tape House Records blog"><img class="brand-icon" src="assets/tape-house-logo.jpg" alt="Tape House Records cassette house artwork" /><span>Tape House<br />Records</span></a>
-    <span class="edition">FREE TO PLAY<br />OPEN SOURCE / VOL. 01</span>
-  </header>
-  <main class="layout">
-    <section class="game-side" aria-label="Cassette Chaos arcade game">
-      <div class="screen-frame">
-        <div class="screen" id="gameScreen">
-          <canvas id="game" width="420" height="580" aria-label="Game field with falling cassette tapes. Drag or use arrow keys to move the tape deck to catch them.">Your browser needs canvas support to play.</canvas>
-          <div class="hud" aria-live="off">
-            <div class="stat"><span class="stat-label">SCORE</span><span class="stat-value" id="score">0000</span></div>
-            <div class="stat"><span class="stat-label">LIVES</span><span class="stat-value" id="lives">♥ ♥ ♥</span></div>
-            <div class="stat"><span class="stat-label">BEST</span><span class="stat-value" id="best">0000</span></div>
-          </div>
-          <div class="overlay" id="overlay">
-            <div class="overlay-card">
-              <span class="ribbon" id="overlayRibbon">TAPE HOUSE ARCADE PRESENTS</span>
-              <img class="cover-art" src="assets/tape-house-logo.jpg" alt="" aria-hidden="true" />
-              <span class="tape-mark" id="overlayIcon" aria-hidden="true">📼</span>
-              <h2 id="overlayTitle">CASSETTE CHAOS!</h2>
-              <p id="overlayText">Keep the DIY set alive as long as you can. Build a catch streak, grab wild power-ups, and dodge broken tapes. There is no final level—when the deck runs out of hearts, it stages an encore.</p>
-              <button class="primary" id="mainButton" type="button">▶ PLAY THE GAME</button>
-              <span class="tiny-note" id="overlayHint">DRAG TO MOVE • OR USE ← → / A D</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="buttonbar" aria-label="Game actions">
-        <button type="button" id="pauseButton" disabled>Ⅱ PAUSE</button>
-        <button type="button" id="soundButton" aria-pressed="true">♫ SOUND ON</button>
-        <span id="powerIndicator" role="status" style="color:var(--yellow);font-size:12px;flex:1;text-align:right;">READY TO ROCK</span>
-      </div>
-      <div class="arrow-buttons" aria-label="Touch steering controls">
-        <button type="button" id="leftButton" aria-label="Move left">◀ LEFT</button>
-        <button type="button" id="rightButton" aria-label="Move right">RIGHT ▶</button>
-      </div>
-    </section>
-    <aside class="guide">
-      <span class="eyebrow">AN ARCADE GAME FOR THE UNDERGROUND</span>
-      <h1>Cassette <em>Chaos!</em></h1>
-      <p class="subtitle">The mixtape is falling apart. Literally. Run the tape deck, rescue the good tunes, and keep the DIY spirit alive. No algorithms. No sign-ups. Just one more round.</p>
-      <hr class="rule" />
-      <h3>Know your drops</h3>
-      <ul class="legend">
-        <li><span class="legend-icon" aria-hidden="true">📼</span><span><strong>Good cassette • +10</strong><span class="help">Catch it before it hits the floor.</span></span></li>
-        <li><span class="legend-icon" aria-hidden="true">✨</span><span><strong>Gold tape • +50</strong><span class="help">Rare find at the bottom of the bargain bin.</span></span></li>
-        <li><span class="legend-icon" aria-hidden="true">☕</span><span><strong>Coffee • double points</strong><span class="help">Seven glorious seconds of caffeine.</span></span></li>
-        <li><span class="legend-icon" aria-hidden="true">🧲</span><span><strong>Magnet • pull in tapes</strong><span class="help">Catch tapes nearby for a few seconds.</span></span></li>
-        <li><span class="legend-icon" aria-hidden="true">⭐</span><span><strong>Patch • temporary shield</strong><span class="help">Block a broken tape while the glow lasts.</span></span></li>
-        <li><span class="legend-icon" aria-hidden="true">⏪</span><span><strong>Rewind • clear the field</strong><span class="help">Sweep hazards away and take a breath.</span></span></li>
-        <li><span class="legend-icon" aria-hidden="true">💥</span><span><strong>Broken tape • lose a life</strong><span class="help">Don't let it ruin your set.</span></span></li>
-      </ul>
-      <div class="how"><p><strong>📱 PHONE:</strong> Drag your finger across the game, or hold the left/right buttons.</p><p><strong>⌨️ COMPUTER:</strong> Move your mouse, use ← → or A / D. Press Space or P to pause.</p><p><strong>THE SET:</strong> This is endless. Miss a cassette or catch a broken one and you lose a heart. When all three are gone, an encore refills them with a small score penalty. Build five-catch streaks for bigger points.</p></div>
-      <span class="sticker">★ NO FINAL TRACK • KEEP THE SET GOING ★</span>
-    </aside>
-  </main>
-  <footer>
-    <span>© 2026 Tape House Records • The game code is open source under the MIT License.</span>
-    <a href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer">VISIT THE TAPE HOUSE BLOG ↗</a>
-  </footer>
+<header class="brandbar">
+<img src="assets/tape-house-logo.jpg" alt="Tape House Records cassette house logo">
+<div class="brand-copy">Tape House Records<small>DIY worlds, loud hearts</small></div>
+<div class="tagline">CASSETTE CHAOS<br>OPEN WORLD / VOL. 01</div>
+</header>
+<div class="intro">
+<div><h1>Welcome to the <em>Tape Lands</em></h1><p>Wander the woods, meet the locals, gather what you need, build a home base, take on quests, and chase those slimes out of the forest. The world keeps going at your pace.</p></div>
+</div>
+<main class="layout">
+<section class="game-shell" aria-label="Cassette Chaos RPG">
+<div class="hud">
+<div class="stat"><label>LEVEL</label><strong id="level">1</strong></div>
+<div class="stat"><label>HEALTH</label><strong id="health">♥ ♥ ♥ ♥ ♥</strong></div>
+<div class="stat"><label>XP</label><strong id="xp">0 / 50</strong></div>
+<div class="stat"><label>GOLD</label><strong id="gold">0</strong></div>
+</div>
+<canvas id="world" width="704" height="480" aria-label="Top-down pixel world. Tap a place to walk there."></canvas>
+<div class="controls">
+<div class="pad" aria-label="Movement controls">
+<button class="empty" tabindex="-1"></button><button data-move="up" aria-label="Move up">▲</button><button class="empty" tabindex="-1"></button>
+<button data-move="left" aria-label="Move left">◀</button><button data-move="down" aria-label="Move down">▼</button><button data-move="right" aria-label="Move right">▶</button>
+</div>
+<div class="action-row"><button id="interact">E • INTERACT</button><button id="attack">⚔ BONK A SLIME</button></div>
+</div>
+<p class="hint">Tap the map or use the arrows • E / INTERACT gathers, talks, and turns in quests • Space / BONK attacks • The world saves on this device</p>
+</section>
+<aside class="side">
+<section class="panel"><h2>🎒 Your pack</h2><div class="bag">
+<div class="item">🪵 Wood <b id="wood">0</b></div><div class="item">🪨 Stone <b id="stone">0</b></div>
+<div class="item">🫐 Berries <b id="berries">0</b></div><div class="item">🌿 Herbs <b id="herbs">0</b></div>
+<div class="item">🏠 Builds <b id="buildCount">1</b></div><div class="item">☠ Slimes <b id="slimeCount">0</b></div>
+</div><h3>What’s nearby?</h3><p id="nearby">Find Juniper by the clearing. She has work for a new adventurer.</p><p class="feed" id="message" role="status">A quiet forest, a strange crackle in the air, and a trail leading north.</p></section>
+<section class="panel"><h2>📜 Quests</h2><div id="quests"><p>Talk to Juniper to get your first quest.</p></div></section>
+<section class="panel"><h2>🛠 Build & craft</h2>
+<div class="recipe">🔥 Campfire <span>3 wood + 2 stone</span><button data-build="campfire">BUILD</button></div>
+<div class="recipe">🏕 Cabin <span>10 wood + 5 stone</span><button data-build="cabin">BUILD</button></div>
+<div class="recipe">🌱 Berry patch <span>3 wood + 2 herbs</span><button data-build="garden">PLANT</button></div>
+<div class="recipe">🪧 Trail sign <span>2 wood</span><button data-build="sign">PLACE</button></div>
+<p>Builds go in the next open tile beside you. Your little corner of the Tape Lands is yours to shape.</p>
+</section>
+</aside>
+</main>
+<footer><span>© 2026 Tape House Records • Open source under the MIT License.</span><a href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer">VISIT THE TAPE HOUSE BLOG ↗</a></footer>
+</div>
+<div class="overlay" id="welcome">
+<div class="card"><span class="ribbon">TAPE HOUSE RECORDS PRESENTS</span><img src="assets/tape-house-logo.jpg" alt=""><h2>THE TAPE LANDS</h2>
+<p>An open world built from cassettes, campfires, and the people you meet along the trail. Take it easy: gather, make a home, follow the quests, and deal with a few noisy slimes.</p>
+<p><b>Move:</b> WASD / arrows or tap a destination. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
+<button class="primary" id="enter">▶ START WANDERING</button></div>
+</div>
+<div class="dialogue" id="dialogue" hidden>
+<div class="dialog-card"><h2 id="dialogName">Juniper</h2><p id="dialogText"></p><div class="dialog-actions"><button id="dialogAccept">TAKE THE JOB</button><button id="dialogClose">LATER</button></div></div>
 </div>
 <script>
 (() => {
-  'use strict';
-  // MIT licensed. All graphics and sounds are generated by code, with no external assets.
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const W = 420, H = 580, deckY = 509;
-  const $ = id => document.getElementById(id);
-  const ui = {
-    score: $('score'), lives: $('lives'), best: $('best'), overlay: $('overlay'),
-    ribbon: $('overlayRibbon'), icon: $('overlayIcon'), title: $('overlayTitle'),
-    description: $('overlayText'), main: $('mainButton'), hint: $('overlayHint'),
-    pause: $('pauseButton'), sound: $('soundButton'), power: $('powerIndicator')
-  };
-  const colors = ['#ff6c97','#89e4bf','#ffd56d','#9da8ff','#feaa79'];
-  const logoArt = new Image(); logoArt.src = 'assets/tape-house-logo.jpg';
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let mode = 'ready';
-  let score = 0, lives = 3, best = 0, elapsed = 0, spawnClock = 0, streak = 0, coffeeTime = 0, shieldTime = 0, magnetTime = 0;
-  let items = [], bursts = [], last = 0, animId = 0, audio = null, soundOn = true;
-  let steer = 0, keyboardSteer = 0, buttonSteer = 0;
-  let deckX = W / 2, targetX = deckX;
-  try { best = Number(localStorage.getItem('tapehouse_cassette_chaos_best')) || 0; } catch (_) {}
-  function clamp(n,a,b) { return Math.max(a,Math.min(b,n)); }
-  function rand(a,b) { return a + Math.random()*(b-a); }
-  function display() {
-    ui.score.textContent = String(score).padStart(4,'0');
-    ui.best.textContent = String(Math.max(best,score)).padStart(4,'0');
-    ui.lives.textContent = '♥ '.repeat(lives).trim() || '× × ×';
-    ui.power.textContent = coffeeTime > 0 ? '☕ 2X SCORE ' + Math.ceil(coffeeTime) + 's' : magnetTime > 0 ? '🧲 MAGNET ' + Math.ceil(magnetTime) + 's' : shieldTime > 0 ? '⭐ SHIELD ' + Math.ceil(shieldTime) + 's' : (mode === 'running' ? 'STREAK ×' + streak : 'READY TO ROCK');
-  }
-  function setOverlay(ribbon,icon,title,description,button,hint) {
-    ui.ribbon.textContent=ribbon; ui.icon.textContent=icon; ui.title.textContent=title;
-    ui.description.textContent=description; ui.main.textContent=button; ui.hint.textContent=hint;
-    ui.overlay.classList.remove('hidden');
-  }
-  function hideOverlay() { ui.overlay.classList.add('hidden'); }
-  function saveBest() { if (score>best) { best=score; try { localStorage.setItem('tapehouse_cassette_chaos_best',String(best)); } catch (_) {} } }
-  function start() {
-    score=0; lives=3; elapsed=0; spawnClock=0; streak=0; coffeeTime=0; shieldTime=0; magnetTime=0;
-    items=[]; bursts=[]; deckX=W/2; targetX=deckX; buttonSteer=keyboardSteer=steer=0;
-    mode='running'; hideOverlay(); ui.pause.disabled=false; ui.pause.textContent='Ⅱ PAUSE'; display();
-    sound(392,'triangle',0.08,.055); sound(587,'triangle',0.11,.04,.095);
-  }
-  function gameOver() {
-    // No game over in the endless set: the deck catches its breath and keeps going.
-    lives=3; streak=0; score=Math.max(0,score-100); shieldTime=3; coffeeTime=0; magnetTime=0;
-    items=[]; saveBest(); display();
-    sound(247,'sawtooth',0.17,.065); sound(392,'triangle',0.16,.055,.12);
-    burst(W/2,deckY-80,'ENCORE! −100','#ffd56d');
-  }
-  function pause() {
-    if (mode==='running') {
-      mode='paused'; ui.pause.textContent='▶ RESUME';
-      setOverlay('TAPE DECK ON HOLD','⏸','PAUSED','The punk rock can wait. Your tapes will be right where you left them.','▶ KEEP PLAYING','PRESS SPACE OR P TO RESUME');
-    } else if (mode==='paused') {
-      mode='running'; ui.pause.textContent='Ⅱ PAUSE'; hideOverlay();
-    }
-    display();
-  }
-  function playAction() { if (mode==='paused') pause(); else start(); }
-  ui.main.addEventListener('click',playAction);
-  ui.pause.addEventListener('click',pause);
-  ui.sound.addEventListener('click',()=>{ soundOn=!soundOn; ui.sound.textContent=soundOn?'♫ SOUND ON':'♫ SOUND OFF'; ui.sound.setAttribute('aria-pressed',String(soundOn)); if (soundOn) sound(440,'sine',0.05,.04); });
-  function sound(freq,wave='sine',duration=.09,volume=.06,delay=0) {
-    if (!soundOn) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      if (!audio) audio = new AudioContext();
-      if (audio.state==='suspended') audio.resume().catch(()=>{});
-      const osc=audio.createOscillator(), gain=audio.createGain(), t=audio.currentTime+delay;
-      osc.type=wave; osc.frequency.setValueAtTime(freq,t);
-      osc.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.8),t+duration);
-      gain.gain.setValueAtTime(.0001,t); gain.gain.exponentialRampToValueAtTime(volume,t+.012);
-      gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
-      osc.connect(gain); gain.connect(audio.destination); osc.start(t); osc.stop(t+duration+.015);
-    } catch (_) { /* Gameplay must work even if audio is blocked. */ }
-  }
-  function pointerX(event) {
-    const box=canvas.getBoundingClientRect();
-    return (event.clientX-box.left)*W/box.width;
-  }
-  canvas.addEventListener('pointerdown',event=>{
-    if (mode!=='running') return;
-    targetX=clamp(pointerX(event),44,W-44);
-    try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
-  });
-  canvas.addEventListener('pointermove',event=>{
-    if (mode!=='running' || (event.pointerType==='touch' && event.buttons===0)) return;
-    targetX=clamp(pointerX(event),44,W-44);
-  });
-  const keys = new Set();
-  function setKeySteer() { keyboardSteer=(keys.has('arrowright')||keys.has('d')?1:0)-(keys.has('arrowleft')||keys.has('a')?1:0); }
-  document.addEventListener('keydown',event=>{
-    const k=event.key.toLowerCase();
-    if (['arrowleft','arrowright',' ','arrowup','arrowdown'].includes(k)) event.preventDefault();
-    if (['arrowleft','arrowright','a','d'].includes(k)) { keys.add(k); setKeySteer(); }
-    if (!event.repeat && (k===' '||k==='p')) { if (mode==='running'||mode==='paused') pause(); }
-    if (!event.repeat && k==='enter' && (mode==='ready'||mode==='over')) start();
-  });
-  document.addEventListener('keyup',event=>{ keys.delete(event.key.toLowerCase()); setKeySteer(); });
-  window.addEventListener('blur',()=>{ keys.clear(); setKeySteer(); buttonSteer=0; if(mode==='running')pause(); });
-  document.addEventListener('visibilitychange',()=>{ if(document.hidden && mode==='running')pause(); });
-  const hold=(node,dir)=>{
-    node.addEventListener('pointerdown',event=>{ event.preventDefault(); buttonSteer=dir; try{node.setPointerCapture(event.pointerId);}catch(_){} });
-    for(const action of ['pointerup','pointercancel','lostpointercapture']) node.addEventListener(action,()=>{ if(buttonSteer===dir)buttonSteer=0; });
-  };
-  hold($('leftButton'),-1); hold($('rightButton'),1);
-  function spawn() {
-    const r=Math.random();
-    const type = r<.57?'tape':r<.72?'broken':r<.81?'gold':r<.87?'coffee':r<.92?'magnet':r<.97?'shield':'rewind';
-    const radius= ['coffee','magnet','shield','rewind'].includes(type)?20:29;
-    const x=rand(radius+9,W-radius-9);
-    items.push({type,x,y:-45,rot:rand(-.3,.3),vx:rand(-.9,.9),phase:rand(0,7),color:colors[Math.floor(rand(0,colors.length))],speed:rand(.85,1.15),radius});
-  }
-  function burst(x,y,label,color) {
-    bursts.push({x,y,label,color,life:1});
-  }
-  function hit(item) {
-    if (item.type==='broken') {
-      if (shieldTime>0) { shieldTime=0; sound(700,'sine',.08,.06); burst(item.x,deckY-25,'SHIELD BLOCK!','#89e4bf'); }
-      else { lives--; streak=0; sound(125,'sawtooth',.19,.10); burst(item.x,deckY-25,'-1 HEART','#ff6c97'); if(lives<=0){gameOver();return;} }
-    } else if (item.type==='coffee') {
-      coffeeTime=7; sound(570,'sine',.07,.07); sound(900,'sine',.11,.06,.065); burst(item.x,deckY-20,'2× COFFEE!','#ffd56d');
-    } else if (item.type==='magnet') {
-      magnetTime=8; sound(520,'sine',.07,.06); burst(item.x,deckY-20,'MAGNET ON!','#9da8ff');
-    } else if (item.type==='shield') {
-      shieldTime=7; sound(650,'triangle',.08,.06); burst(item.x,deckY-20,'PATCH SHIELD!','#89e4bf');
-    } else if (item.type==='rewind') {
-      items=items.filter(other=>other.type==='tape'||other.type==='gold'||other.type==='coffee');
-      sound(330,'sawtooth',.18,.06); burst(item.x,deckY-20,'REWIND!','#ff6c97');
-    } else {
-      const base=item.type==='gold'?50:10;
-      const multiplier=1+Math.floor(streak/5);
-      const points=base*(coffeeTime>0?2:1)*multiplier;
-      score+=points; streak++;
-      sound(item.type==='gold'?760:440+Math.min(streak,7)*35,'triangle',.085,.045);
-      burst(item.x,deckY-20,'+'+points+(streak%5===0?' STREAK!':''),item.type==='gold'?'#ffd56d':'#89e4bf');
-    }
-    display();
-  }
-  function missed(item) {
-    if(item.type==='tape') {
-      lives--; streak=0; sound(171,'triangle',.16,.07);
-      burst(item.x,H-38,'MISSED!','#ff6c97');
-      if(lives<=0){gameOver();return;}
-      display();
-    }
-  }
-  function update(dt) {
-    if (mode!=='running') return;
-    elapsed+=dt; coffeeTime=Math.max(0,coffeeTime-dt); shieldTime=Math.max(0,shieldTime-dt); magnetTime=Math.max(0,magnetTime-dt);
-    steer=clamp(keyboardSteer+buttonSteer,-1,1);
-    if(steer) targetX+=steer*370*dt;
-    targetX=clamp(targetX,48,W-48);
-    deckX+=(targetX-deckX)*Math.min(1,dt*22);
-    spawnClock+=dt;
-    const spawnEvery=Math.max(.72,1.12-Math.min(elapsed,80)*.003);
-    if(spawnClock>=spawnEvery){spawnClock-=spawnEvery;spawn();}
-    for(let i=items.length-1;i>=0;i--) {
-      const it=items[i];
-      it.y+=(149+Math.min(elapsed*.55,70))*it.speed*dt;
-      it.phase+=dt*2.2;
-      if(magnetTime>0&&(it.type==='tape'||it.type==='gold')) it.x+=clamp(deckX-it.x,-110,110)*dt*2.4;
-      // Catch while the falling object's lower edge overlaps the tape deck's slot.
-      if(it.y>=deckY-27 && it.y<=deckY+14 && Math.abs(it.x-deckX)<(['coffee','magnet','shield','rewind'].includes(it.type)?59:61)) {
-        items.splice(i,1); hit(it); if(mode==='over') return; continue;
-      }
-      if(it.y>H+35){items.splice(i,1);missed(it);if(mode==='over')return;}
-    }
-    for(let i=bursts.length-1;i>=0;i--) {bursts[i].life-=dt*1.2;bursts[i].y-=dt*36;if(bursts[i].life<=0)bursts.splice(i,1);}
-    ui.power.textContent=coffeeTime>0?'☕ 2X SCORE '+Math.ceil(coffeeTime)+'s':magnetTime>0?'🧲 MAGNET '+Math.ceil(magnetTime)+'s':shieldTime>0?'⭐ SHIELD '+Math.ceil(shieldTime)+'s':'STREAK ×'+streak;
-  }
-  function roundRect(x,y,w,h,r,fill,stroke,line=2) {
-    ctx.beginPath();ctx.roundRect(x,y,w,h,r);
-    if(fill){ctx.fillStyle=fill;ctx.fill();}
-    if(stroke){ctx.lineWidth=line;ctx.strokeStyle=stroke;ctx.stroke();}
-  }
-  function drawBackground(t) {
-    const grad=ctx.createLinearGradient(0,0,W,H);
-    grad.addColorStop(0,'#1d1c31');grad.addColorStop(1,'#121922');
-    ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-    if(logoArt.complete&&logoArt.naturalWidth){ctx.save();ctx.globalAlpha=.17;ctx.drawImage(logoArt,92,176,236,236);ctx.restore();}
-    ctx.lineWidth=1;
-    ctx.strokeStyle='#b4b8ff13';
-    for(let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    for(let y=0;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    for(let j=0;j<15;j++){
-      const xx=(j*71+23)%W;
-      const yy=(j*127+40+(reduceMotion?0:t*10*(j%3+1)))%H;
-      ctx.fillStyle=j%2?'#ffd56d33':'#f8efd92b';ctx.fillRect(xx,yy,2,2);
-    }
-    roundRect(15,94,91,25,3,'#2b2536','#86667f',1);
-    ctx.fillStyle='#ffc6aa';ctx.font='bold 11px monospace';ctx.fillText('SIDE A / 01',24,111);
-    ctx.textAlign='right';ctx.fillStyle='#927e93';ctx.fillText('45 RPM? NAH.',W-17,113);ctx.textAlign='left';
-    ctx.fillStyle='#232134';ctx.fillRect(0,H-45,W,45);
-    ctx.fillStyle='#ff6c9744';ctx.fillRect(0,H-47,W,2);
-    for(let x=14;x<W;x+=28){ctx.fillStyle='#f8efd913';ctx.fillRect(x,H-25,15,2);}
-  }
-  function drawTape(it) {
-    ctx.save();ctx.translate(it.x,it.y);ctx.rotate(it.rot+Math.sin(it.phase)*.045);
-    if(['coffee','magnet','shield','rewind'].includes(it.type)) {drawSpecial(it.type);ctx.restore();return;}
-    const gold=it.type==='gold',broken=it.type==='broken';
-    const body=broken?'#aab1ba':(gold?'#ffd56d':it.color);
-    ctx.shadowBlur=gold?22:0;ctx.shadowColor='#ffd56d';
-    roundRect(-31,-21,62,42,5,'#191722','#0a0b10',3);
-    roundRect(-27,-17,54,30,3,body,'#403544',2);
-    roundRect(-23,-12,46,13,2,broken?'#5c5363':'#f8efd9','#3a2e40',1.5);
-    ctx.shadowBlur=0;
-    ctx.fillStyle='#262330';
-    ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.fillText(gold?'RARE!':broken?'BROKEN':'TAPE HOUSE',0,-3);
-    for(const xx of [-13,13]){
-      ctx.fillStyle='#22212e';ctx.beginPath();ctx.arc(xx,9,7,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#eee9db';ctx.beginPath();ctx.arc(xx,9,3,0,Math.PI*2);ctx.fill();
-    }
-    ctx.fillStyle='#f8efd9';ctx.fillRect(-5,8,10,4);
-    ctx.beginPath();ctx.moveTo(-15,18);ctx.lineTo(15,18);ctx.lineTo(19,22);ctx.lineTo(-19,22);ctx.closePath();ctx.fillStyle='#1f1a29';ctx.fill();
-    if(broken) {
-      ctx.beginPath();ctx.moveTo(-26,-21);ctx.lineTo(-6,-3);ctx.lineTo(-13,8);ctx.lineTo(13,21);
-      ctx.strokeStyle='#ff6c97';ctx.lineWidth=4;ctx.stroke();
-      ctx.fillStyle='#ff6c97';ctx.font='bold 21px monospace';ctx.fillText('!',23,-15);
-    }
-    if(gold){ctx.fillStyle='#fff5d0';ctx.font='bold 18px monospace';ctx.fillText('✦',31,-15);}
-    ctx.textAlign='left';ctx.restore();
-  }
-  function drawSpecial(type) {
-    const styles={coffee:['#ffe1a3','#49333c','☕'],magnet:['#b9c0ff','#27213b','M'],shield:['#89e4bf','#203b36','★'],rewind:['#ff91ad','#412235','↶']};
-    const [fill,ink,label]=styles[type];
-    ctx.shadowBlur=12;ctx.shadowColor=fill+'88';
-    roundRect(-18,-18,36,36,7,fill,'#332638',3);ctx.shadowBlur=0;
-    ctx.fillStyle=ink;ctx.font='bold 20px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,0,1);ctx.textBaseline='alphabetic';ctx.textAlign='left';
-  }
-  function drawDeck(t) {
-    ctx.save();ctx.translate(deckX,deckY);
-    ctx.shadowColor='#ff6c9766';ctx.shadowBlur=17;
-    roundRect(-48,-9,96,62,9,'#ff6c97','#191524',4);
-    ctx.shadowBlur=0;
-    roundRect(-37,-4,74,17,3,'#1b1723','#ffd56d',2);
-    ctx.fillStyle='#ffd56d';ctx.font='bold 11px monospace';ctx.textAlign='center';ctx.fillText('INSERT TAPE',0,8);
-    roundRect(-40,24,80,20,3,'#f8efd9','#302536',2);
-    for(let j=0;j<9;j++) {ctx.fillStyle='#2e2331';ctx.fillRect(-32+j*8,29,3,10);}
-    ctx.fillStyle='#382937';ctx.beginPath();ctx.arc(-36,48,4,0,7);ctx.arc(36,48,4,0,7);ctx.fill();
-    // An on-deck neon arrow shows the active capture area.
-    if(!reduceMotion){ctx.globalAlpha=.35+.18*Math.sin(t*6);ctx.fillStyle='#89e4bf';ctx.fillRect(-30,-15,60,3);}
-    if(shieldTime>0){ctx.globalAlpha=.55;ctx.strokeStyle='#89e4bf';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,19,61,39,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
-    ctx.restore();
-  }
-  function draw(t) {
-    drawBackground(t);
-    for(const it of items) drawTape(it);
-    drawDeck(t);
-    for(const b of bursts){ctx.save();ctx.globalAlpha=clamp(b.life,0,1);ctx.textAlign='center';ctx.font='bold 17px monospace';ctx.fillStyle=b.color;ctx.fillText(b.label,b.x,b.y);ctx.restore();}
-    if(coffeeTime>0){ctx.strokeStyle='#ffd56d';ctx.lineWidth=4;ctx.strokeRect(4,4,W-8,H-8);}
-  }
-  function frame(time) {
-    const dt=Math.min((time-last)/1000 || 0,.042);last=time;
-    update(dt);draw(time/1000);animId=requestAnimationFrame(frame);
-  }
-  display();
-  animId=requestAnimationFrame(frame);
+'use strict';
+const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const TILE=32,COLS=22,ROWS=15,W=704,H=480,MAP=96;
+const SAVE_KEY='tapehouse-tape-lands-save-v1';
+const keys=new Set(),depleted=new Set(),built=new Map(),deadSlimes=new Set(),slimes=[];
+const held={up:false,down:false,left:false,right:false};
+const initial={
+ x:48.5,y:48.5,level:1,xp:0,health:5,gold:0,wood:0,stone:0,berries:0,herbs:0,
+ accepted:[],done:[],kills:0,builds:[{x:48,y:50,type:'camp'}],home:{x:48.5,y:48.5}
+};
+let player={...initial,accepted:[],done:[],builds:[]};
+let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=0,invuln=0,target=null,lastDir={x:0,y:1};
+const npc={x:48,y:46,name:'Juniper'};
+const questDefs=[
+ {id:'supply',title:'A Welcome Mix',text:'Juniper needs a few basics for the camp: 5 wood, 3 stone, and 2 berries.',need:{wood:5,stone:3,berries:2},xp:55,gold:18},
+ {id:'slimes',title:'Static in the Pines',text:'Three slimes are making the north trail crackle. Send them packing.',need:{kills:3},xp:90,gold:30},
+ {id:'builder',title:'Make It Yours',text:'Build a cabin or a berry patch anywhere in the Tape Lands.',need:{builds:1},xp:75,gold:25}
+];
+function hash(x,y,s=0){let n=Math.imul(x+173+s,374761393)^Math.imul(y-97+s,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967295}
+function key(x,y){return x+','+y}
+function inBounds(x,y){return x>=0&&y>=0&&x<MAP&&y<MAP}
+function terrain(x,y){
+ if(!inBounds(x,y))return'mountain';
+ if((x<2||y<2||x>MAP-3||y>MAP-3))return'mountain';
+ const h=hash(Math.floor(x/3),Math.floor(y/3),11);
+ if(h<.09)return'water';
+ if(h<.13)return'sand';
+ return'grass'
+}
+function naturalObject(x,y){
+ if(terrain(x,y)!=='grass'||depleted.has(key(x,y)))return null;
+ if(Math.abs(x-48)<4&&Math.abs(y-48)<4)return null;
+ const r=hash(x,y,27);
+ if(r<.095)return'tree';
+ if(r<.125)return'rock';
+ if(r<.155)return'berry';
+ if(r<.171)return'flower';
+ return null
+}
+function objectAt(x,y){
+ const k=key(x,y),b=built.get(k);
+ if(b)return b;
+ if(x===npc.x&&y===npc.y)return'npc';
+ return naturalObject(x,y)
+}
+function solid(x,y){
+ if(!inBounds(Math.floor(x),Math.floor(y)))return true;
+ const t=terrain(Math.floor(x),Math.floor(y));
+ if(t==='water'||t==='mountain')return true;
+ const o=objectAt(Math.floor(x),Math.floor(y));
+ return o==='tree'||o==='rock'||o==='cabin'||o==='camp'
+}
+function load(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  if(!saved)return;
+  player={...initial,...saved,accepted:saved.accepted||[],done:saved.done||[],builds:saved.builds||[]};
+  for(const k of saved.depleted||[])depleted.add(k);
+  for(const k of saved.deadSlimes||[])deadSlimes.add(k);
+  for(const b of player.builds)built.set(key(b.x,b.y),b.type);
+ }catch(_){player={...initial,accepted:[],done:[],builds:[]}}
+ if(!built.has('48,50')){built.set('48,50','camp');player.builds.push({x:48,y:50,type:'camp'})}
+}
+function save(){
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify({...player,depleted:[...depleted],deadSlimes:[...deadSlimes]}))}catch(_){}
+}
+function say(t){$('message').textContent=t}
+function addXp(n){
+ player.xp+=n;
+ while(player.xp>=player.level*50){player.xp-=player.level*50;player.level++;player.health=Math.min(5,player.health+1);say('LEVEL UP! You reached level '+player.level+'. The forest heard that one.')}
+}
+function required(q){return Object.entries(q.need).every(([k,v])=>player[k]>=v)}
+function updatePanels(){
+ $('level').textContent=player.level;$('health').textContent='♥ '.repeat(Math.max(0,player.health))||'☠';
+ $('xp').textContent=player.xp+' / '+(player.level*50);$('gold').textContent=player.gold;
+ for(const k of ['wood','stone','berries','herbs'])$(k).textContent=player[k];
+ $('buildCount').textContent=player.builds.length;$('slimeCount').textContent=player.kills;
+ const active=player.accepted.map(id=>questDefs.find(q=>q.id===id)).filter(Boolean);
+ const cards=active.map(q=>{
+  const isDone=required(q);
+  let prog=Object.entries(q.need).map(([k,v])=>(k==='kills'?player.kills:k==='builds'?player.builds.filter(b=>['cabin','garden'].includes(b.type)).length:player[k])+' / '+v+' '+k).join(' • ');
+  return '<div class="quest '+(isDone?'done':'')+'"><strong>'+(isDone?'✓ ':'')+q.title+'</strong><span>'+q.text+'</span><span>'+prog+(isDone?' • Talk to Juniper to turn in':'')+'</span></div>'
+ }).join('');
+ $('quests').innerHTML=cards||'<p>Talk to Juniper near the starting camp. She has a job to get you going.</p>';
+ const bx=Math.floor(player.x),by=Math.floor(player.y),near=nearbyObject();
+ $('nearby').textContent=near?near.label:'You hear wind in the trees. Tap a spot to wander over.';
+ const count=slimes.length;
+ $('slimeCount').textContent=player.kills+(count?' ('+count+' nearby)':'');
+}
+function nearbyObject(){
+ const options=[];
+ for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
+  const wx=Math.floor(player.x)+x,wy=Math.floor(player.y)+y,o=objectAt(wx,wy);
+  if(o&&o!=='npc')options.push({o,x:wx,y:wy,d:Math.hypot(wx+.5-player.x,wy+.5-player.y)});
+ }
+ if(Math.hypot(npc.x+.5-player.x,npc.y+.5-player.y)<2.5)return{label:'Juniper is nearby. Press E to talk.'};
+ options.sort((a,b)=>a.d-b.d);
+ if(!options.length)return null;
+ const labels={tree:'Tree — press E to gather wood.',rock:'Rock — press E to gather stone.',berry:'Berry bush — press E to pick berries.',flower:'Wild herbs — press E to gather herbs.',camp:'Your camp — a safe place to return to.',campfire:'Campfire — warm light in the woods.',cabin:'Cabin — your little home.',garden:'Berry patch — a garden to tend.',sign:'Trail sign — a marker you built.'};
+ return{label:labels[options[0].o]||'Something on the trail.'}
+}
+function talk(){
+ const quest=questDefs.find(q=>!player.done.includes(q.id)&&!player.accepted.includes(q.id));
+ const turnin=questDefs.find(q=>player.accepted.includes(q.id)&&required(q));
+ if(turnin){dialogQuest=turnin;$('dialogName').textContent='Juniper';$('dialogText').textContent='You did it! '+turnin.title+' is complete. Here—take '+turnin.gold+' gold and '+turnin.xp+' experience. Thank you for looking out for this place.';$('dialogAccept').textContent='TURN IN • '+turnin.gold+' GOLD';$('dialogAccept').hidden=false;}
+ else if(quest){dialogQuest=quest;$('dialogName').textContent='Juniper';$('dialogText').textContent=quest.text+' Want to take it on? No rush; the Tape Lands will still be here.';$('dialogAccept').textContent='TAKE THE JOB';$('dialogAccept').hidden=false;}
+ else{$('dialogName').textContent='Juniper';$('dialogText').textContent='You have done everything I could think of. Take the trail east; there is always more out there. Your home and progress are saved.';$('dialogAccept').hidden=true;dialogQuest=null}
+ $('dialogue').hidden=false
+}
+function acceptOrTurnIn(){
+ if(!dialogQuest)return;
+ const q=dialogQuest;
+ if(player.accepted.includes(q.id)&&required(q)){
+  for(const [k,v] of Object.entries(q.need))if(k!=='kills'&&k!=='builds')player[k]-=v;
+  player.accepted=player.accepted.filter(id=>id!==q.id);player.done.push(q.id);player.gold+=q.gold;addXp(q.xp);say('Quest complete: '+q.title+'! Juniper paid you '+q.gold+' gold.');dialogQuest=null;$('dialogue').hidden=true;updatePanels();save();return
+ }
+ if(!player.accepted.includes(q.id)){player.accepted.push(q.id);say('Quest accepted: '+q.title+'. Check the quest panel whenever you need a reminder.')}
+ $('dialogue').hidden=true;updatePanels();save()
+}
+function harvest(x,y,o){
+ const k=key(x,y);depleted.add(k);
+ if(o==='tree'){const n=2+Math.floor(hash(x,y,7)*3);player.wood+=n;say('You gathered '+n+' wood. Great for a fire, a sign, or a roof.')}
+ if(o==='rock'){const n=1+Math.floor(hash(x,y,8)*3);player.stone+=n;say('You gathered '+n+' stone. The trail sounds quieter already.')}
+ if(o==='berry'){const n=2+Math.floor(hash(x,y,9)*3);player.berries+=n;say('You picked '+n+' berries. Juniper will want some.')}
+ if(o==='flower'){const n=1+Math.floor(hash(x,y,10)*2);player.herbs+=n;say('You gathered '+n+' herbs. They smell like rain and old records.')}
+ addXp(3);updatePanels();save()
+}
+function interact(){
+ if(Math.hypot(npc.x+.5-player.x,npc.y+.5-player.y)<=2.1){talk();return}
+ let best=null;
+ for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
+  const wx=Math.floor(player.x)+x,wy=Math.floor(player.y)+y,o=objectAt(wx,wy);
+  const d=Math.hypot(wx+.5-player.x,wy+.5-player.y);
+  if(o&&['tree','rock','berry','flower'].includes(o)&&d<=1.65&&(!best||d<best.d))best={x:wx,y:wy,o,d}
+ }
+ if(best){harvest(best.x,best.y,best.o);return}
+ const build=[...built.entries()].find(([k])=>{const [x,y]=k.split(',').map(Number);return Math.hypot(x+.5-player.x,y+.5-player.y)<=1.7});
+ if(build){say('A little piece of home. Keep exploring, or build something beside it.');return}
+ say('Nothing close enough to use. Walk up to a tree, rock, berry bush, person, or structure.')
+}
+function build(type){
+ const recipes={campfire:{wood:3,stone:2,name:'campfire'},cabin:{wood:10,stone:5,name:'cabin'},garden:{wood:3,herbs:2,name:'berry patch'},sign:{wood:2,name:'trail sign'}};
+ const r=recipes[type];if(!r)return;
+ const keys=Object.keys(r).filter(k=>['wood','stone','herbs'].includes(k));
+ if(keys.some(k=>player[k]<(r[k]||0))){say('You need more materials before you can make that. Gather nearby and try again.');return}
+ const dirs=[{x:-lastDir.x,y:-lastDir.y},{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+ let spot=null;
+ for(const d of dirs){const x=Math.floor(player.x)+d.x,y=Math.floor(player.y)+d.y,k=key(x,y);if(!built.has(k)&&terrain(x,y)==='grass'&&!naturalObject(x,y)&&!(x===npc.x&&y===npc.y)){spot={x,y};break}}
+ if(!spot){say('There is no clear grass beside you. Find an open spot and build there.');return}
+ keys.forEach(k=>player[k]-=r[k]||0);built.set(key(spot.x,spot.y),type);player.builds.push({...spot,type});addXp(8);say('You built a '+r.name+'. This place is starting to feel like yours.');updatePanels();save()
+}
+function tileAt(px,py){
+ const x=Math.floor(px),y=Math.floor(py),t=terrain(x,y);
+ if(t==='water')return'#';
+ if(t==='mountain')return'#';
+ const o=objectAt(x,y);
+ return(o==='tree'||o==='rock'||o==='cabin'||o==='camp')?'#':'.'
+}
+function move(dx,dy,dt){
+ if(!dx&&!dy)return;
+ const mag=Math.hypot(dx,dy)||1;dx/=mag;dy/=mag;
+ lastDir={x:Math.sign(dx),y:Math.sign(dy)};
+ const speed=3.1;
+ const nx=player.x+dx*speed*dt,ny=player.y+dy*speed*dt;
+ if(tileAt(nx,player.y)==='.')player.x=nx;
+ if(tileAt(player.x,ny)==='.')player.y=ny;
+ target=null
+}
+function spawnSlimes(){
+ const sx=Math.floor(player.x-COLS/2)-2,sy=Math.floor(player.y-ROWS/2)-2;
+ for(let y=sy;y<sy+ROWS+4;y++)for(let x=sx;x<sx+COLS+4;x++){
+  if(!inBounds(x,y)||terrain(x,y)!=='grass'||naturalObject(x,y)||built.has(key(x,y))||deadSlimes.has(key(x,y)))continue;
+  if(hash(x,y,91)<.012&&!slimes.some(s=>s.id===key(x,y))&&Math.hypot(x-player.x,y-player.y)>3)slimes.push({id:key(x,y),x:x+.5,y:y+.5,hp:2,cool:0,phase:hash(x,y,93)*7})
+ }
+}
+function attack(){
+ if(attackCool>0)return;
+ attackCool=.42;
+ let targetSlime=null,dist=1.75;
+ for(const s of slimes){const d=Math.hypot(s.x-player.x,s.y-player.y);if(d<dist){targetSlime=s;dist=d}}
+ if(!targetSlime){say('You swing at the air. No slime in bonking range.');return}
+ targetSlime.hp--;targetSlime.flash=.18;
+ say(targetSlime.hp?'Bonk! The slime wobble is losing its confidence.':'Slime defeated! It dropped 5 gold and a couple berries.');
+ if(targetSlime.hp<=0){deadSlimes.add(targetSlime.id);slimes.splice(slimes.indexOf(targetSlime),1);player.kills++;player.gold+=5;player.berries+=2;addXp(18);updatePanels();save()}
+}
+function hurt(){
+ if(invuln>0)return;
+ invuln=1.1;player.health--;say('A slime booped you. Hearts: '+player.health+'.');
+ if(player.health<=0){player.x=player.home.x;player.y=player.home.y;player.health=5;player.gold=Math.max(0,player.gold-5);say('You wake back at camp. Nothing is lost but 5 gold. Take a breath, then head back out.')}
+ updatePanels();save()
+}
+function updateSlimes(dt){
+ spawnSlimes();
+ for(const s of slimes){
+  s.cool=Math.max(0,s.cool-dt);s.flash=Math.max(0,(s.flash||0)-dt);s.phase+=dt*4;
+  const dx=player.x-s.x,dy=player.y-s.y,d=Math.hypot(dx,dy);
+  if(d<6&&d>1.05){const step=Math.min(1.1*dt,d-1);const nx=s.x+dx/d*step,ny=s.y+dy/d*step;if(tileAt(nx,s.y)==='.')s.x=nx;if(tileAt(s.x,ny)==='.')s.y=ny}
+  if(d<1.05&&s.cool<=0){s.cool=1.35;hurt()}
+ }
+}
+function drawTile(x,y,sx,sy){
+ const t=terrain(x,y),px=sx*TILE,py=sy*TILE,h=hash(x,y,3);
+ if(t==='water'){
+  ctx.fillStyle=h>.5?'#356e83':'#2c6378';ctx.fillRect(px,py,TILE,TILE);
+  ctx.fillStyle='#8bd2d044';ctx.fillRect(px+5+(h*11|0),py+7,TILE/2,2);ctx.fillRect(px+15,py+21,TILE/3,2);return
+ }
+ if(t==='mountain'){ctx.fillStyle='#434148';ctx.fillRect(px,py,TILE,TILE);ctx.fillStyle='#777078';ctx.fillRect(px+3,py+5,26,8);ctx.fillStyle='#59545e';ctx.fillRect(px+7,py+13,21,15);return}
+ if(t==='sand'){ctx.fillStyle=h>.5?'#b49b65':'#a9905e';ctx.fillRect(px,py,TILE,TILE);if(h>.6){ctx.fillStyle='#dfc477';ctx.fillRect(px+7,py+9,3,2);ctx.fillRect(px+20,py+24,2,2)}return}
+ ctx.fillStyle=h>.5?'#527b43':'#4e7540';ctx.fillRect(px,py,TILE,TILE);
+ if(h>.84){ctx.fillStyle='#648b4e';ctx.fillRect(px+5,py+7,2,2);ctx.fillRect(px+23,py+20,2,2)}
+ const o=objectAt(x,y);
+ if(o==='tree'){
+  ctx.fillStyle='#59402e';ctx.fillRect(px+13,py+17,7,14);
+  ctx.fillStyle='#244b35';ctx.fillRect(px+5,py+5,22,17);ctx.fillStyle='#32613c';ctx.fillRect(px+2,py+9,28,12);ctx.fillStyle='#3f7544';ctx.fillRect(px+8,py+3,15,9);
+  ctx.fillStyle='#74a851';ctx.fillRect(px+8,py+8,4,3);ctx.fillRect(px+21,py+13,3,3);
+ }else if(o==='rock'){
+  ctx.fillStyle='#69636b';ctx.fillRect(px+6,py+13,20,14);ctx.fillRect(px+10,py+8,13,8);ctx.fillStyle='#a7a0a0';ctx.fillRect(px+11,py+10,5,3);ctx.fillStyle='#4c4851';ctx.fillRect(px+8,py+25,18,3);
+ }else if(o==='berry'){
+  ctx.fillStyle='#604a30';ctx.fillRect(px+8,py+16,16,9);ctx.fillStyle='#36744a';ctx.fillRect(px+5,py+9,22,10);ctx.fillStyle='#db608a';ctx.fillRect(px+9,py+13,4,4);ctx.fillRect(px+19,py+17,4,4);ctx.fillStyle='#ffb1c7';ctx.fillRect(px+10,py+13,2,2);
+ }else if(o==='flower'){
+  ctx.fillStyle='#356441';ctx.fillRect(px+15,py+15,2,12);ctx.fillStyle='#ffd56d';ctx.fillRect(px+11,py+12,10,5);ctx.fillRect(px+14,py+9,4,10);ctx.fillStyle='#ff91ad';ctx.fillRect(px+14,py+13,4,4)
+ }else if(o==='camp'||o==='campfire'){
+  ctx.fillStyle='#855936';ctx.fillRect(px+6,py+24,20,5);ctx.fillStyle='#6d452b';ctx.fillRect(px+8,py+19,16,6);ctx.fillStyle='#ff7c43';ctx.fillRect(px+12,py+12,8,9);ctx.fillStyle='#ffd56d';ctx.fillRect(px+14,py+15,4,7);ctx.fillStyle='#fff2bb';ctx.fillRect(px+15,py+13,2,3)
+ }else if(o==='cabin'){
+  ctx.fillStyle='#69432f';ctx.fillRect(px+4,py+13,24,16);ctx.fillStyle='#9a5c41';ctx.fillRect(px+2,py+8,28,8);ctx.fillStyle='#3c2b34';ctx.fillRect(px+13,py+18,8,11);ctx.fillStyle='#ffd56d';ctx.fillRect(px+7,py+17,4,5)
+ }else if(o==='garden'){
+  ctx.fillStyle='#47352a';ctx.fillRect(px+3,py+18,26,10);ctx.fillStyle='#68934b';for(let i=0;i<4;i++){ctx.fillRect(px+6+i*6,py+16-(i%2)*3,3,8);ctx.fillStyle='#db608a';ctx.fillRect(px+5+i*6,py+14-(i%2)*3,4,3);ctx.fillStyle='#68934b'}
+ }else if(o==='sign'){
+  ctx.fillStyle='#67462e';ctx.fillRect(px+14,py+16,4,14);ctx.fillStyle='#c69c63';ctx.fillRect(px+5,py+9,22,10);ctx.fillStyle='#493442';ctx.fillRect(px+8,py+12,15,2)
+ }else if(o==='npc'){
+  ctx.fillStyle='#3b2935';ctx.fillRect(px+8,py+24,16,5);ctx.fillStyle='#d27a57';ctx.fillRect(px+10,py+8,12,15);ctx.fillStyle='#4d925e';ctx.fillRect(px+8,py+4,16,7);ctx.fillStyle='#f1c69a';ctx.fillRect(px+12,py+10,8,7);ctx.fillStyle='#25212a';ctx.fillRect(px+12,py+14,2,2);ctx.fillRect(px+18,py+14,2,2);ctx.fillStyle='#ffd56d';ctx.fillRect(px+23,py+1,8,8);ctx.fillStyle='#312337';ctx.font='bold 8px monospace';ctx.fillText('!',px+25,py+8)
+ }
+}
+function drawSlime(s,sx,sy){
+ const x=(s.x-camX)*TILE,y=(s.y-camY)*TILE+Math.sin(s.phase)*2;
+ ctx.fillStyle='#17201888';ctx.fillRect(x-10,y+10,20,4);
+ ctx.fillStyle=s.flash>0?'#fff4da':'#a56bd2';ctx.fillRect(x-11,y-7,22,15);ctx.fillRect(x-8,y-11,16,6);ctx.fillStyle='#e8a4eb';ctx.fillRect(x-7,y-7,5,4);ctx.fillRect(x+3,y-7,5,4);ctx.fillStyle='#32243d';ctx.fillRect(x-5,y-5,2,3);ctx.fillRect(x+4,y-5,2,3)
+}
+function drawPlayer(){
+ const x=(player.x-camX)*TILE,y=(player.y-camY)*TILE;
+ ctx.fillStyle='#17201899';ctx.fillRect(x-10,y+11,20,4);
+ if(invuln>0&&Math.floor(clock*12)%2)ctx.globalAlpha=.45;
+ ctx.fillStyle='#292230';ctx.fillRect(x-7,y+4,6,10);ctx.fillRect(x+2,y+4,6,10);ctx.fillStyle='#ff6c97';ctx.fillRect(x-9,y-5,18,12);ctx.fillStyle='#f0cda5';ctx.fillRect(x-6,y-12,12,9);
+ ctx.fillStyle='#ffd56d';ctx.fillRect(x-8,y-15,16,5);ctx.fillStyle='#26202b';ctx.fillRect(x-3,y-8,2,2);ctx.fillRect(x+3,y-8,2,2);ctx.fillStyle='#89e4bf';ctx.fillRect(x+7,y-4,4,7);
+ ctx.globalAlpha=1
+}
+function drawMini(){
+ const mw=94,mh=70,x=W-mw-10,y=10;ctx.fillStyle='#11121ce8';ctx.fillRect(x,y,mw,mh);ctx.strokeStyle='#f8efd977';ctx.strokeRect(x,y,mw,mh);
+ for(let iy=0;iy<17;iy++)for(let ix=0;ix<23;ix++){const wx=Math.floor(player.x)-11+ix,wy=Math.floor(player.y)-8+iy,t=terrain(wx,wy);ctx.fillStyle=t==='water'?'#347287':t==='mountain'?'#55515b':t==='sand'?'#b49b65':'#527b43';ctx.fillRect(x+ix*4,y+iy*4,4,4)}
+ ctx.fillStyle='#ff6c97';ctx.fillRect(x+46,y+33,4,4);ctx.fillStyle='#ffd56d';if(Math.abs(npc.x-player.x)<15&&Math.abs(npc.y-player.y)<12)ctx.fillRect(x+(npc.x-Math.floor(player.x)+11)*4,y+(npc.y-Math.floor(player.y)+8)*4,4,4)
+}
+function draw(){
+ ctx.clearRect(0,0,W,H);camX=Math.max(0,Math.min(MAP-COLS,Math.floor(player.x-COLS/2)));camY=Math.max(0,Math.min(MAP-ROWS,Math.floor(player.y-ROWS/2)));
+ for(let sy=0;sy<ROWS;sy++)for(let sx=0;sx<COLS;sx++)drawTile(camX+sx,camY+sy,sx,sy);
+ for(const s of slimes){const sx=Math.floor(s.x)-camX,sy=Math.floor(s.y)-camY;if(sx>=0&&sy>=0&&sx<COLS&&sy<ROWS)drawSlime(s,sx,sy)}
+ drawPlayer();drawMini();
+ const night=(Math.sin(clock*.025)+1)/2;
+ if(night>.76){ctx.fillStyle='rgba(19,22,43,'+((night-.76)*.42)+')';ctx.fillRect(0,0,W,H)}
+}
+function canvasTarget(e){
+ const b=canvas.getBoundingClientRect(),wx=(e.clientX-b.left)*W/b.width,wy=(e.clientY-b.top)*H/b.height;
+ target={x:camX+wx/TILE,y:camY+wy/TILE}
+}
+canvas.addEventListener('pointerdown',e=>{canvasTarget(e);canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointermove',e=>{if(e.buttons)canvasTarget(e)});
+function frame(t){
+ const dt=Math.min(.045,(t-(frame.last||t))/1000);frame.last=t;clock+=dt;
+ if(started){
+  let dx=(keys.has('ArrowRight')||keys.has('d')||held.right?1:0)-(keys.has('ArrowLeft')||keys.has('a')||held.left?1:0);
+  let dy=(keys.has('ArrowDown')||keys.has('s')||held.down?1:0)-(keys.has('ArrowUp')||keys.has('w')||held.up?1:0);
+  if(dx||dy)move(dx,dy,dt);
+  else if(target){const tx=target.x+.5,ty=target.y+.5,dd=Math.hypot(tx-player.x,ty-player.y);if(dd<.16)target=null;else move((tx-player.x)/dd,(ty-player.y)/dd,dt)}
+  attackCool=Math.max(0,attackCool-dt);invuln=Math.max(0,invuln-dt);
+  updateSlimes(dt);saveClock+=dt;if(saveClock>5){saveClock=0;save()}
+  updatePanels()
+ }
+ draw();requestAnimationFrame(frame)
+}
+function start(){started=true;$('welcome').classList.add('hidden');updatePanels();say('Welcome to the Tape Lands. Juniper is just north of your camp.');}
+$('enter').addEventListener('click',start);
+$('interact').addEventListener('click',interact);$('attack').addEventListener('click',attack);
+$('dialogAccept').addEventListener('click',acceptOrTurnIn);$('dialogClose').addEventListener('click',()=>$('dialogue').hidden=true);
+document.addEventListener('keydown',e=>{
+ const k=e.key.toLowerCase();
+ if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();
+ keys.add(e.key===' '?'Space':e.key);
+ if(k==='e'&&!e.repeat&&started)interact();
+ if(e.key===' '&&!e.repeat&&started)attack();
+});
+document.addEventListener('keyup',e=>{keys.delete(e.key);keys.delete(e.key===' '?'Space':e.key)});
+window.addEventListener('blur',()=>{keys.clear();Object.keys(held).forEach(k=>held[k]=false)});
+document.querySelectorAll('[data-move]').forEach(b=>{
+ const d=b.dataset.move;
+ b.addEventListener('pointerdown',e=>{e.preventDefault();held[d]=true;b.setPointerCapture(e.pointerId)});
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>held[d]=false)
+});
+document.querySelectorAll('[data-build]').forEach(b=>b.addEventListener('click',()=>build(b.dataset.build)));
+function load(){
+ try{
+  const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+  if(s)player={...initial,...s,accepted:s.accepted||[],done:s.done||[],builds:s.builds||[]};
+ }catch(_){}
+ if(!player.builds.some(b=>b.type==='camp'))player.builds.push({x:48,y:50,type:'camp'});
+ for(const b of player.builds)built.set(key(b.x,b.y),b.type);
+ try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');(s?.depleted||[]).forEach(k=>depleted.add(k));(s?.deadSlimes||[]).forEach(k=>deadSlimes.add(k))}catch(_){}
+}
+load();updatePanels();requestAnimationFrame(frame);
 })();
 </script>
 </body>
