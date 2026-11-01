@@ -59,7 +59,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="stat"><label>XP</label><strong id="xp">0 / 50</strong></div>
 <div class="stat"><label>GOLD</label><strong id="gold">0</strong></div>
 </div>
-<canvas id="world" width="704" height="480" aria-label="Top-down pixel world. Tap a place to walk there."></canvas>
+<canvas id="world" width="704" height="480" aria-label="First-person pixel forest. Use the movement controls to explore."></canvas>
 <div class="controls">
 <div class="pad" aria-label="Movement controls">
 <button class="empty" tabindex="-1"></button><button data-move="up" aria-label="Move up">▲</button><button class="empty" tabindex="-1"></button>
@@ -67,7 +67,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 </div>
 <div class="action-row"><button id="interact">E • INTERACT</button><button id="attack">⚔ FIGHT</button></div>
 </div>
-<p class="hint">Tap the map or use the arrows • E / INTERACT gathers, talks, and turns in quests • Space / BONK attacks • The world saves on this device. Interact with campfires or cabins to set a save point</p>
+<p class="hint">W / ▲ move forward • S / ▼ step back • A / ◀ turn left • D / ▶ turn right • E / INTERACT • SPACE / FIGHT • Progress saves in this browser. Interact with campfires or cabins to set a save point</p>
 </section>
 <aside class="side">
 <section class="panel"><h2>🎒 Your pack</h2><div class="bag">
@@ -91,7 +91,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="overlay" id="welcome">
 <div class="card"><span class="ribbon">TAPE HOUSE RECORDS PRESENTS</span><img src="assets/tape-house-logo.jpg" alt=""><h2>THE TAPE LANDS</h2>
 <p>An open world built from cassettes, campfires, and the people you meet along the trail. Take it easy: gather, make a home, follow the quests, and deal with a few noisy raiders.</p>
-<p><b>Move:</b> WASD / arrows or tap a destination. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
+<p><b>Move:</b> Up / W. <b>Turn:</b> Left / Right or A / D. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
 <p><b>Choose your free adventurer:</b></p><div class="class-picks" role="group" aria-label="Choose your character">
 <button class="class-pick selected" data-class="warrior">⚔ WARRIOR<small>Sturdy, close-range</small></button>
 <button class="class-pick" data-class="wizard">✨ WIZARD<small>Magic from afar</small></button>
@@ -119,7 +119,7 @@ const initial={
  accepted:[],done:[],kills:0,characterClass:'warrior',checkpoint:{x:48.5,y:48.5,name:'Starting Camp'},builds:[{x:48,y:50,type:'camp'}],home:{x:48.5,y:48.5}
 };
 let player={...initial,accepted:[],done:[],builds:[]};
-let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=0,invuln=0,target=null,lastDir={x:0,y:1};
+let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=0,invuln=0,target=null,lastDir={x:0,y:-1},viewAngle=-Math.PI/2;
 const npc={x:48,y:46,name:'Juniper'};
 const questDefs=[
  {id:'supply',title:'A Welcome Mix',text:'Juniper needs a few basics for the camp: 5 wood, 3 stone, and 2 berries.',need:{wood:5,stone:3,berries:2},xp:55,gold:18},
@@ -300,7 +300,9 @@ function attack(){
  attackCool=.42;
  const stats=classes[player.characterClass||'warrior'];
  let targetRaider=null,dist=stats.range;
- for(const s of raiders){const d=Math.hypot(s.x-player.x,s.y-player.y);if(d<dist){targetRaider=s;dist=d}}
+ const fx=Math.cos(viewAngle),fy=Math.sin(viewAngle);
+ for(const s of raiders){const dx=s.x-player.x,dy=s.y-player.y,d=Math.hypot(dx,dy),ahead=(dx*fx+dy*fy)/Math.max(.001,d);
+  if(d<dist&&ahead>.35){targetRaider=s;dist=d}}
  if(!targetRaider){say('No Tape Raider is in range. Move closer or line up a spell or arrow.');return}
  targetRaider.hp-=stats.damage;targetRaider.flash=.18;
  const name=targetRaider.kind==='bruiser'?'Amp Bruiser':targetRaider.kind==='runner'?'Riff Runner':'Tape Raider';
@@ -381,41 +383,164 @@ function drawMini(){
  for(let iy=0;iy<17;iy++)for(let ix=0;ix<23;ix++){const wx=Math.floor(player.x)-11+ix,wy=Math.floor(player.y)-8+iy,t=terrain(wx,wy);ctx.fillStyle=t==='water'?'#347287':t==='mountain'?'#55515b':t==='sand'?'#b49b65':'#527b43';ctx.fillRect(x+ix*4,y+iy*4,4,4)}
  ctx.fillStyle='#ff6c97';ctx.fillRect(x+46,y+33,4,4);ctx.fillStyle='#ffd56d';if(Math.abs(npc.x-player.x)<15&&Math.abs(npc.y-player.y)<12)ctx.fillRect(x+(npc.x-Math.floor(player.x)+11)*4,y+(npc.y-Math.floor(player.y)+8)*4,4,4)
 }
-function draw(){
- ctx.clearRect(0,0,W,H);camX=Math.max(0,Math.min(MAP-COLS,Math.floor(player.x-COLS/2)));camY=Math.max(0,Math.min(MAP-ROWS,Math.floor(player.y-ROWS/2)));
- for(let sy=0;sy<ROWS;sy++)for(let sx=0;sx<COLS;sx++)drawTile(camX+sx,camY+sy,sx,sy);
- for(const s of raiders){const sx=Math.floor(s.x)-camX,sy=Math.floor(s.y)-camY;if(sx>=0&&sy>=0&&sx<COLS&&sy<ROWS)drawRaider(s,sx,sy)}
- drawPlayer();drawMini();
- const night=(Math.sin(clock*.025)+1)/2;
- if(night>.76){ctx.fillStyle='rgba(19,22,43,'+((night-.76)*.42)+')';ctx.fillRect(0,0,W,H)}
+function rayHit(rayX,rayY){
+ let mx=Math.floor(player.x),my=Math.floor(player.y),side=0,dist=24;
+ const deltaX=Math.abs(1/(rayX||.0001)),deltaY=Math.abs(1/(rayY||.0001));
+ const stepX=rayX<0?-1:1,stepY=rayY<0?-1:1;
+ let sideX=rayX<0?(player.x-mx)*deltaX:(mx+1-player.x)*deltaX;
+ let sideY=rayY<0?(player.y-my)*deltaY:(my+1-player.y)*deltaY;
+ for(let i=0;i<52;i++){
+  if(sideX<sideY){sideX+=deltaX;mx+=stepX;side=0;dist=sideX-deltaX}
+  else{sideY+=deltaY;my+=stepY;side=1;dist=sideY-deltaY}
+  if(solid(mx+.5,my+.5))break
+ }
+ const o=objectAt(mx,my),t=terrain(mx,my),wallX=side===0?player.y+dist*rayY:player.x+dist*rayX;
+ return{dist:Math.max(.12,dist),side,o,t,mx,my,wallX:wallX-Math.floor(wallX)}
 }
+function wallColor(hit){
+ if(hit.o==='tree')return['#315c39','#396c40','#244c33'];
+ if(hit.o==='rock')return['#6b6870','#8a8589','#504e59'];
+ if(hit.o==='cabin')return['#87573a','#a8764f','#5c3a34'];
+ if(hit.o==='camp'||hit.o==='campfire')return['#b7603e','#f2a34e','#70402f'];
+ if(hit.t==='water')return['#34738a','#58a1ad','#285669'];
+ if(hit.t==='mountain')return['#6b6973','#89838b','#4e4b55'];
+ return['#42683d','#5e8250','#2d4b35']
+}
+function shadeColor(hex,amount){
+ const n=parseInt(hex.slice(1),16),r=Math.min(255,Math.round((n>>16)*amount)),g=Math.min(255,Math.round(((n>>8)&255)*amount)),b=Math.min(255,Math.round((n&255)*amount));
+ return'rgb('+r+','+g+','+b+')'
+}
+function drawWall(hit,x,w,horizon,zbuf,index){
+ const dist=hit.dist,wallH=Math.min(H*2,H/dist),top=horizon-wallH/2,base=wallColor(hit);
+ const shade=Math.max(.22,1-dist/22)*(hit.side===1?.78:1),tex=hit.wallX;
+ const c=base[tex<.18||tex>.82?2:tex<.5?0:1];
+ ctx.fillStyle=shadeColor(c,shade);ctx.fillRect(x,top,w+1,wallH);
+ if(hit.o==='tree'){
+  ctx.fillStyle=shadeColor('#1c412e',shade*.95);ctx.fillRect(x,top,w+1,wallH*.28);
+  ctx.fillStyle=shadeColor('#507b48',shade);if(tex>.22&&tex<.72)ctx.fillRect(x,top+wallH*.08,w+1,wallH*.14);
+  ctx.fillStyle=shadeColor('#684b32',shade);if(tex>.42&&tex<.58)ctx.fillRect(x,top+wallH*.34,w+1,wallH*.66);
+ }else if(hit.o==='cabin'){
+  ctx.fillStyle=shadeColor('#352b32',shade);ctx.fillRect(x,top+wallH*.56,w+1,wallH*.44);
+  if(tex>.34&&tex<.66){ctx.fillStyle=shadeColor('#f6ce77',shade);ctx.fillRect(x,top+wallH*.35,w+1,wallH*.13)}
+ }else if(hit.o==='camp'||hit.o==='campfire'){
+  ctx.fillStyle=shadeColor('#ffd472',shade);ctx.fillRect(x,top+wallH*.48,w+1,wallH*.18)
+ }else if(hit.o==='rock'){
+  ctx.fillStyle=shadeColor('#c3bcc0',shade);if(tex>.25&&tex<.45)ctx.fillRect(x,top+wallH*.18,w+1,wallH*.1)
+ }
+ ctx.fillStyle='rgba(20,24,23,.18)';
+ for(let y=top+wallH*.32;y<top+wallH;y+=Math.max(5,wallH*.18))ctx.fillRect(x,y,w+1,1);
+ zbuf[index]=dist
+}
+function sceneBackground(horizon){
+ const sky=ctx.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#17283e');sky.addColorStop(.72,'#7196a0');sky.addColorStop(1,'#d0b47c');ctx.fillStyle=sky;ctx.fillRect(0,0,W,horizon);
+ const ground=ctx.createLinearGradient(0,horizon,0,H);ground.addColorStop(0,'#60784a');ground.addColorStop(.2,'#42663b');ground.addColorStop(1,'#233d2b');ctx.fillStyle=ground;ctx.fillRect(0,horizon,W,H-horizon);
+ ctx.fillStyle='#7e7350';ctx.beginPath();ctx.moveTo(W*.46,horizon);ctx.lineTo(W*.54,horizon);ctx.lineTo(W*.92,H);ctx.lineTo(W*.08,H);ctx.closePath();ctx.fill();
+ for(let y=horizon+8,step=8;y<H;y+=step,step*=1.24){ctx.fillStyle='rgba(201,186,125,.16)';ctx.fillRect(0,y,W,1)}
+ drawFantasyHorizon(horizon);
+ for(let i=0;i<28;i++){const x=hash(i,Math.floor(clock*2),33)*W,y=horizon+hash(i,2,34)*(H-horizon);ctx.fillStyle=i%2?'#7da15a55':'#bac47a44';ctx.fillRect(x,y,2+hash(i,8,35)*5,1)}
+}
+function cameraProject(x,y){
+ const fx=Math.cos(viewAngle),fy=Math.sin(viewAngle),px=-fy*.68,py=fx*.68,dx=x-player.x,dy=y-player.y,det=px*fy-fx*py,inv=1/det;
+ return{x:(fy*dx-fx*dy)*inv,y:(-py*dx+px*dy)*inv}
+}
+function billboard(x,y,type,kind){
+ const p=cameraProject(x,y);if(p.y<=.12||p.y>22)return;
+ const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.72:type==='raider'?.75:.48));
+ const width=height*(type==='resource'?.36:.48),bottom=H*.56,col=Math.max(0,Math.min(175,Math.floor(screen/4)));
+ if(p.y>zBuffer[col]+.25)return;
+ ctx.save();ctx.translate(screen,bottom);
+ if(type==='resource'){
+  if(kind==='berry'){ctx.fillStyle='#356d43';ctx.fillRect(-width*.45,-height*.48,width*.9,height*.4);ctx.fillStyle='#e96b9d';ctx.fillRect(-width*.25,-height*.45,width*.18,height*.16);ctx.fillRect(width*.12,-height*.31,width*.16,height*.14)}
+  else if(kind==='flower'){ctx.fillStyle='#347744';ctx.fillRect(-2,-height*.35,4,height*.33);ctx.fillStyle='#ffcb73';ctx.fillRect(-width*.23,-height*.49,width*.46,height*.2)}
+  else{ctx.fillStyle='#657259';ctx.fillRect(-width*.42,-height*.38,width*.84,height*.34);ctx.fillStyle='#aba9a3';ctx.fillRect(-width*.19,-height*.47,width*.38,height*.13)}
+ }else{
+  const isNpc=type==='npc';
+  ctx.fillStyle='#182018aa';ctx.fillRect(-width*.46,-2,width*.92,Math.max(3,height*.08));
+  ctx.fillStyle='#282332';ctx.fillRect(-width*.32,-height*.24,width*.25,height*.24);ctx.fillRect(width*.07,-height*.24,width*.25,height*.24);
+  ctx.fillStyle=isNpc?'#4b9560':kind.kind==='bruiser'?'#9155b5':kind.kind==='runner'?'#bd66a4':'#a56bd2';ctx.fillRect(-width*.44,-height*.68,width*.88,height*.47);
+  ctx.fillStyle=isNpc?'#c87956':'#e2aa83';ctx.fillRect(-width*.28,-height*.92,width*.56,height*.25);
+  ctx.fillStyle=isNpc?'#315c3e':'#372746';ctx.fillRect(-width*.42,-height*.98,width*.84,height*.12);
+  ctx.fillStyle='#f4ead2';ctx.fillRect(-width*.15,-height*.84,width*.08,height*.035);ctx.fillRect(width*.08,-height*.84,width*.08,height*.035);
+  if(isNpc){ctx.fillStyle='#ffd56d';ctx.font='bold '+Math.max(10,height*.13)+'px monospace';ctx.textAlign='center';ctx.fillText('JUNIPER',0,-height*1.06)}
+  else{ctx.fillStyle='#271e2b';ctx.fillRect(-width*.45,-height*1.07,width*.9,Math.max(3,height*.06));ctx.fillStyle='#ff6c97';ctx.fillRect(-width*.45,-height*1.07,width*.9*Math.max(0,kind.hp/(kind.kind==='bruiser'?3:kind.kind==='runner'?1:2)),Math.max(3,height*.06));ctx.fillStyle='#fff0d8';ctx.fillRect(width*.38,-height*.55,width*.12,height*.32)}
+ }
+ ctx.restore()
+}
+function drawMini(){
+ const mw=94,mh=70,x=W-mw-10,y=10;ctx.fillStyle='#11121ce8';ctx.fillRect(x,y,mw,mh);ctx.strokeStyle='#f8efd977';ctx.strokeRect(x,y,mw,mh);
+ for(let iy=0;iy<17;iy++)for(let ix=0;ix<23;ix++){const wx=Math.floor(player.x)-11+ix,wy=Math.floor(player.y)-8+iy,t=terrain(wx,wy);ctx.fillStyle=t==='water'?'#347287':t==='mountain'?'#55515b':t==='sand'?'#b49b65':'#527b43';ctx.fillRect(x+ix*4,y+iy*4,4,4)}
+ ctx.fillStyle='#ff6c97';ctx.fillRect(x+46,y+33,4,4);ctx.fillStyle='#ffd56d';if(Math.abs(npc.x-player.x)<15&&Math.abs(npc.y-player.y)<12)ctx.fillRect(x+(npc.x-Math.floor(player.x)+11)*4,y+(npc.y-Math.floor(player.y)+8)*4,4,4)
+}
+function drawFantasyHorizon(horizon){
+ const drift=((viewAngle+Math.PI/2)*115)%W;
+ ctx.fillStyle='#3b5c4c';
+ for(let i=-2;i<27;i++){
+  const x=((i*42-drift)%W+W)%W-16,ht=18+hash(i,1,47)*28;
+  ctx.beginPath();ctx.moveTo(x-19,horizon+5);ctx.lineTo(x,horizon-ht);ctx.lineTo(x+19,horizon+5);ctx.fill()
+ }
+ const cx=W*.52-drift*.18,top=horizon-66;
+ ctx.fillStyle='#655c61';ctx.fillRect(cx-32,top+22,64,48);ctx.fillRect(cx-23,top+10,14,60);ctx.fillRect(cx+12,top+4,14,66);
+ ctx.fillStyle='#86777a';ctx.beginPath();ctx.moveTo(cx-39,top+23);ctx.lineTo(cx-16,top);ctx.lineTo(cx+5,top+22);ctx.fill();
+ ctx.fillStyle='#443c4a';ctx.fillRect(cx-7,top+42,15,28);ctx.fillRect(cx-18,top+30,8,12);ctx.fillRect(cx+15,top+25,7,12);
+ ctx.fillStyle='#ffd56d';ctx.fillRect(cx-16,top+35,5,9);ctx.fillRect(cx+15,top+30,5,8);
+ ctx.fillStyle='#bd687b';ctx.fillRect(cx+18,top-12,2,17);ctx.fillRect(cx+20,top-12,18,10);
+ ctx.fillStyle='#c3a975';ctx.fillRect(0,horizon+2,W,2)
+}
+function drawWeapon(){
+ const cl=player.characterClass||'warrior',swing=attackCool>.22?Math.sin((.42-attackCool)/.42*Math.PI):0;
+ ctx.save();ctx.translate(W*.84,H*.97);ctx.rotate(-.2-swing*.48);
+ if(cl==='warrior'){
+  ctx.fillStyle='#60402f';ctx.fillRect(-9,-56,18,62);ctx.fillStyle='#b99b65';ctx.fillRect(-24,-61,48,9);
+  ctx.fillStyle='#d8e0df';ctx.beginPath();ctx.moveTo(-8,-60);ctx.lineTo(-12,-164);ctx.lineTo(0,-193);ctx.lineTo(12,-164);ctx.lineTo(8,-60);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#8ba4a4';ctx.fillRect(-3,-158,6,87)
+ }else if(cl==='wizard'){
+  ctx.fillStyle='#70482e';ctx.fillRect(-5,-154,10,156);ctx.fillStyle='#8fd6ff';ctx.shadowColor='#83cfff';ctx.shadowBlur=18;ctx.beginPath();ctx.arc(0,-168,15+Math.sin(clock*4)*2,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#d8f5ff';ctx.beginPath();ctx.arc(-4,-173,4,0,Math.PI*2);ctx.fill()
+ }else{
+  ctx.strokeStyle='#80583a';ctx.lineWidth=10;ctx.beginPath();ctx.arc(0,-102,62,-1.25,1.25);ctx.stroke();ctx.strokeStyle='#e1ce9c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-58,-158);ctx.lineTo(0,-102);ctx.lineTo(-58,-46);ctx.stroke();ctx.fillStyle='#75523a';ctx.fillRect(-12,-103,64,8)
+ }
+ ctx.restore()
+}
+function drawHotbar(){
+ const items=['⚔','✦','✚'],labels=['HIT','SKILL','HEAL'],x=W/2-92,y=H-43;
+ for(let i=0;i<3;i++){ctx.fillStyle='#171522d9';ctx.fillRect(x+i*62,y,56,35);ctx.strokeStyle=i===0?'#ffd56d':'#877285';ctx.lineWidth=2;ctx.strokeRect(x+i*62,y,56,35);ctx.fillStyle=i===0?'#ffd56d':'#f8efd9';ctx.font='bold 13px monospace';ctx.textAlign='center';ctx.fillText(items[i],x+28+i*62,y+15);ctx.font='bold 7px monospace';ctx.fillText(labels[i],x+28+i*62,y+27)}
+}
+function drawFirstPerson(){
+ const horizon=H*.43;sceneBackground(horizon);zBuffer=[];
+ const rays=176,strip=W/rays,fx=Math.cos(viewAngle),fy=Math.sin(viewAngle),planeX=-fy*.68,planeY=fx*.68;
+ for(let i=0;i<rays;i++){const camera=2*i/rays-1,rx=fx+planeX*camera,ry=fy+planeY*camera,hit=rayHit(rx,ry);drawWall(hit,i*strip,strip,horizon,zBuffer,i)}
+ const sprites=[];if(Math.hypot(npc.x+.5-player.x,npc.y+.5-player.y)<18)sprites.push({x:npc.x+.5,y:npc.y+.5,type:'npc'});
+ for(const s of raiders)sprites.push({x:s.x,y:s.y,type:'raider',kind:s});
+ const px=Math.floor(player.x),py=Math.floor(player.y);
+ for(let y=py-10;y<=py+10;y++)for(let x=px-10;x<=px+10;x++){const o=naturalObject(x,y);if(['berry','flower','rock'].includes(o))sprites.push({x:x+.5,y:y+.5,type:'resource',kind:o})}
+ sprites.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
+ for(const s of sprites)billboard(s.x,s.y,s.type,s.kind);
+ ctx.strokeStyle='#fff2d5aa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W/2-7,H*.43);ctx.lineTo(W/2+7,H*.43);ctx.moveTo(W/2,H*.43-7);ctx.lineTo(W/2,H*.43+7);ctx.stroke();
+ drawMini();drawHotbar();drawWeapon();
+ const night=(Math.sin(clock*.025)+1)/2;if(night>.76){ctx.fillStyle='rgba(19,22,43,'+((night-.76)*.32)+')';ctx.fillRect(0,0,W,H)}
+}
+function draw(){ctx.clearRect(0,0,W,H);drawFirstPerson()}
 function canvasTarget(e){
- const b=canvas.getBoundingClientRect(),wx=(e.clientX-b.left)*W/b.width,wy=(e.clientY-b.top)*H/b.height;
- target={x:camX+wx/TILE,y:camY+wy/TILE}
+ const b=canvas.getBoundingClientRect(),sx=(e.clientX-b.left)*W/b.width,sy=(e.clientY-b.top)*H/b.height;
+ const spread=(sx-W/2)/W*4,range=2.5+(1-sy/H)*5,fx=Math.cos(viewAngle),fy=Math.sin(viewAngle),rx=-fy,ry=fx;
+ target={x:player.x+fx*range+rx*spread,y:player.y+fy*range+ry*spread}
 }
 canvas.addEventListener('pointerdown',e=>{canvasTarget(e);canvas.setPointerCapture(e.pointerId)});
 canvas.addEventListener('pointermove',e=>{if(e.buttons)canvasTarget(e)});
 function frame(t){
  const dt=Math.min(.045,(t-(frame.last||t))/1000);frame.last=t;clock+=dt;
  if(started){
-  let dx=(keys.has('ArrowRight')||keys.has('d')||held.right?1:0)-(keys.has('ArrowLeft')||keys.has('a')||held.left?1:0);
-  let dy=(keys.has('ArrowDown')||keys.has('s')||held.down?1:0)-(keys.has('ArrowUp')||keys.has('w')||held.up?1:0);
-  if(dx||dy)move(dx,dy,dt);
-  else if(target){const tx=target.x+.5,ty=target.y+.5,dd=Math.hypot(tx-player.x,ty-player.y);if(dd<.16)target=null;else move((tx-player.x)/dd,(ty-player.y)/dd,dt)}
-  attackCool=Math.max(0,attackCool-dt);invuln=Math.max(0,invuln-dt);
-  updateRaiders(dt);saveClock+=dt;if(saveClock>5){saveClock=0;save()}
-  updatePanels()
+  const forward=(keys.has('ArrowUp')||keys.has('w')||held.up?1:0)-(keys.has('ArrowDown')||keys.has('s')||held.down?1:0);
+  const turn=(keys.has('ArrowRight')||keys.has('d')||held.right?1:0)-(keys.has('ArrowLeft')||keys.has('a')||held.left?1:0);
+  viewAngle+=turn*2.65*dt;lastDir={x:Math.sign(Math.cos(viewAngle)),y:Math.sign(Math.sin(viewAngle))};
+  if(forward)move(Math.cos(viewAngle)*forward,Math.sin(viewAngle)*forward,dt);
+  else if(target){
+   const dx=target.x-player.x,dy=target.y-player.y,d=Math.hypot(dx,dy),want=Math.atan2(dy,dx),delta=Math.atan2(Math.sin(want-viewAngle),Math.cos(want-viewAngle));
+   if(d<.25)target=null;else if(Math.abs(delta)>.12)viewAngle+=Math.sign(delta)*Math.min(Math.abs(delta),2.65*dt);else move(Math.cos(viewAngle),Math.sin(viewAngle),dt)
+  }
+  attackCool=Math.max(0,attackCool-dt);invuln=Math.max(0,invuln-dt);updateRaiders(dt);saveClock+=dt;if(saveClock>5){saveClock=0;save()}updatePanels()
  }
  draw();requestAnimationFrame(frame)
 }
-function chooseClass(name){
- if(!classes[name])return;
- player.characterClass=name;selectedClass=name;
- player.health=Math.min(classes[name].maxHealth,player.health||classes[name].maxHealth);
- document.querySelectorAll('[data-class]').forEach(b=>b.classList.toggle('selected',b.dataset.class===name));
- updatePanels();save()
-}
-document.querySelectorAll('[data-class]').forEach(b=>b.addEventListener('click',()=>chooseClass(b.dataset.class)));
 function start(){started=true;$('welcome').classList.add('hidden');updatePanels();say('Welcome, '+classes[player.characterClass||'warrior'].label+'. Juniper is just north of your camp.');}
 $('enter').addEventListener('click',start);
 $('interact').addEventListener('click',interact);$('attack').addEventListener('click',attack);
