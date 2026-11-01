@@ -18,7 +18,7 @@
     .site { max-width:1050px; margin:0 auto; padding:20px clamp(14px,4vw,36px) 44px; }
     .brandbar { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:22px; border-bottom:2px dashed #70606e; padding-bottom:18px; }
     .brand { color:var(--cream); text-decoration:none; text-transform:uppercase; display:flex; gap:12px; align-items:center; font-weight:1000; letter-spacing:.08em; line-height:1.18; font-size:clamp(14px,2.5vw,19px); }
-    .brand-icon { display:inline-grid; place-items:center; width:42px; height:34px; background:var(--yellow); color:#322437; border:3px solid #34253b; box-shadow:4px 4px 0 var(--pink); border-radius:6px; font-size:24px; letter-spacing:0; transform:rotate(-7deg); }
+    .brand-icon { display:block; width:58px; height:58px; object-fit:cover; border:2px solid var(--cream); box-shadow:4px 4px 0 var(--pink); border-radius:8px; transform:rotate(-5deg); flex:0 0 58px; }
     .edition { color:var(--mint); font-size:11px; border:1px solid var(--mint); padding:8px 10px; transform:rotate(2deg); text-align:center; }
     .layout { display:grid; grid-template-columns:minmax(320px,480px) 1fr; align-items:start; gap:clamp(18px,4vw,38px); }
     .game-side { min-width:0; }
@@ -37,6 +37,7 @@
     .ribbon { display:inline-block; background:#27202d; color:var(--mint); font-size:10px; padding:6px 9px; letter-spacing:.12em; transform:rotate(3deg); margin-bottom:8px; }
     .overlay-card h2 { margin:9px auto 10px; font-size:clamp(30px,7vw,47px); line-height:.94; letter-spacing:-.09em; max-width:240px; transform:rotate(-2deg); }
     .overlay-card p { font-size:12px; line-height:1.55; margin:10px 0 20px; color:#4b414b; }
+    .cover-art { display:block; width:104px; height:104px; object-fit:cover; margin:4px auto 10px; border:3px solid #1a1520; box-shadow:4px 4px 0 var(--pink); border-radius:8px; transform:rotate(3deg); }
     .overlay-card .tape-mark { font-size:54px; display:block; margin:6px auto; filter:drop-shadow(3px 4px 0 #ffd56d); }
     .primary { cursor:pointer; border:3px solid #231927; border-radius:3px; background:var(--pink); color:#201720; font-size:17px; font-weight:1000; text-transform:uppercase; letter-spacing:.05em; padding:12px 16px; width:100%; box-shadow:4px 5px 0 #322634; transition:transform .12s,box-shadow .12s; }
     .primary:hover { transform:translate(-1px,-2px); box-shadow:5px 7px 0 #322634; }
@@ -74,7 +75,7 @@
 <body>
 <div class="site">
   <header class="brandbar">
-    <a class="brand" href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer" aria-label="Tape House Records blog"><span class="brand-icon" aria-hidden="true">▣</span><span>Tape House<br />Records</span></a>
+    <a class="brand" href="https://tapehouserecords.home.blog/" target="_blank" rel="noopener noreferrer" aria-label="Tape House Records blog"><img class="brand-icon" src="assets/tape-house-logo.jpg" alt="Tape House Records cassette house artwork" /><span>Tape House<br />Records</span></a>
     <span class="edition">FREE TO PLAY<br />OPEN SOURCE / VOL. 01</span>
   </header>
   <main class="layout">
@@ -90,6 +91,7 @@
           <div class="overlay" id="overlay">
             <div class="overlay-card">
               <span class="ribbon" id="overlayRibbon">TAPE HOUSE ARCADE PRESENTS</span>
+              <img class="cover-art" src="assets/tape-house-logo.jpg" alt="" aria-hidden="true" />
               <span class="tape-mark" id="overlayIcon" aria-hidden="true">📼</span>
               <h2 id="overlayTitle">CASSETTE CHAOS!</h2>
               <p id="overlayText">Keep the DIY set alive as long as you can. Build a catch streak, grab wild power-ups, and dodge broken tapes. There is no final level—when the deck runs out of hearts, it stages an encore.</p>
@@ -149,6 +151,7 @@
     pause: $('pauseButton'), sound: $('soundButton'), power: $('powerIndicator')
   };
   const colors = ['#ff6c97','#89e4bf','#ffd56d','#9da8ff','#feaa79'];
+  const logoArt = new Image(); logoArt.src = 'assets/tape-house-logo.jpg';
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let mode = 'ready';
   let score = 0, lives = 3, best = 0, elapsed = 0, spawnClock = 0, streak = 0, coffeeTime = 0, shieldTime = 0, magnetTime = 0;
@@ -316,6 +319,7 @@
     const grad=ctx.createLinearGradient(0,0,W,H);
     grad.addColorStop(0,'#1d1c31');grad.addColorStop(1,'#121922');
     ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
+    if(logoArt.complete&&logoArt.naturalWidth){ctx.save();ctx.globalAlpha=.17;ctx.drawImage(logoArt,92,176,236,236);ctx.restore();}
     ctx.lineWidth=1;
     ctx.strokeStyle='#b4b8ff13';
     for(let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
