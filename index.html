@@ -65,7 +65,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <button class="empty" tabindex="-1"></button><button data-move="up" aria-label="Move up">▲</button><button class="empty" tabindex="-1"></button>
 <button data-move="left" aria-label="Move left">◀</button><button data-move="down" aria-label="Move down">▼</button><button data-move="right" aria-label="Move right">▶</button>
 </div>
-<div class="action-row"><button id="interact">E • INTERACT</button><button id="attack">⚔ FIGHT</button></div>
+<div class="action-row" style="grid-template-columns:1fr 1fr 1fr"><button id="interact">E • INTERACT</button><button id="attack">⚔ FIGHT</button><button id="potion">🧪 1 POTION</button></div>
 </div>
 <p class="hint">W / ▲ move forward • S / ▼ step back • A / ◀ turn left • D / ▶ turn right • E / INTERACT • SPACE / FIGHT • Progress saves in this browser. Interact with campfires or cabins to set a save point</p>
 </section>
@@ -75,6 +75,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="item">🫐 Berries <b id="berries">0</b></div><div class="item">🌿 Herbs <b id="herbs">0</b></div>
 <div class="item">🏠 Builds <b id="buildCount">1</b></div><div class="item">☠ Raiders <b id="raiderCount">0</b></div>
 <div class="item">🧭 Save point <b id="checkpoint">Camp</b></div><div class="item">🎭 Class <b id="className">Warrior</b></div>
+<div class="item">🧪 Potions <b id="potionCount">1</b></div><div class="item">🗡 Gear <b id="gearName">Trail Blade</b></div>
 </div><h3>What’s nearby?</h3><p id="nearby">Find Juniper by the clearing. She has work for a new adventurer.</p><p class="feed" id="message" role="status">A quiet forest, a strange crackle in the air, and a trail leading north.</p></section>
 <section class="panel"><h2>📜 Quests</h2><div id="quests"><p>Talk to Juniper to get your first quest.</p></div></section>
 <section class="panel"><h2>🛠 Build & craft</h2>
@@ -82,6 +83,8 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="recipe">🏕 Cabin <span>10 wood + 5 stone</span><button data-build="cabin">BUILD</button></div>
 <div class="recipe">🌱 Berry patch <span>3 wood + 2 herbs</span><button data-build="garden">PLANT</button></div>
 <div class="recipe">🪧 Trail sign <span>2 wood</span><button data-build="sign">PLACE</button></div>
+<div class="recipe">🧪 Health potion <span>2 berries + 1 herb</span><button id="craftPotion">BREW</button></div>
+<p>Somewhere east of camp, the Echo Shrine opens an old vault. Juniper marked it on your map.</p>
 <p>Builds go in the next open tile beside you. Your little corner of the Tape Lands is yours to shape.</p>
 </section>
 </aside>
@@ -116,7 +119,7 @@ const keys=new Set(),depleted=new Set(),built=new Map(),deadRaiders=new Set(),ra
 const held={up:false,down:false,left:false,right:false};
 const initial={
  x:48.5,y:48.5,level:1,xp:0,health:7,gold:0,wood:0,stone:0,berries:0,herbs:0,
- accepted:[],done:[],kills:0,characterClass:'warrior',checkpoint:{x:48.5,y:48.5,name:'Starting Camp'},builds:[{x:48,y:50,type:'camp'}],home:{x:48.5,y:48.5}
+ accepted:[],done:[],kills:0,characterClass:'warrior',bossDefeated:false,relicClaimed:false,weaponLevel:0,potions:1,inVault:false,checkpoint:{x:48.5,y:48.5,name:'Starting Camp'},builds:[{x:48,y:50,type:'camp'}],home:{x:48.5,y:48.5}
 };
 let player={...initial,accepted:[],done:[],builds:[]};
 let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=0,invuln=0,target=null,lastDir={x:0,y:-1},viewAngle=-Math.PI/2;
@@ -125,13 +128,16 @@ const npc={x:48,y:46,name:'Juniper'};
 const questDefs=[
  {id:'supply',title:'A Welcome Mix',text:'Juniper needs a few basics for the camp: 5 wood, 3 stone, and 2 berries.',need:{wood:5,stone:3,berries:2},xp:55,gold:18},
  {id:'raiders',title:'Static in the Pines',text:'Three Tape Raiders have been shaking down travelers on the north trail. Beat them back and bring the trail quiet again.',need:{kills:3},xp:90,gold:30},
- {id:'builder',title:'Make It Yours',text:'Build a cabin or a berry patch anywhere in the Tape Lands.',need:{builds:1},xp:75,gold:25}
+ {id:'builder',title:'Make It Yours',text:'Build a cabin or a berry patch anywhere in the Tape Lands.',need:{builds:1},xp:75,gold:25},
+ {id:'vault',title:'The Echo Vault',text:'Travel to the Echo Shrine, enter the old vault, and defeat the Static King.',need:{bossDefeated:1},xp:180,gold:45}
 ];
 function hash(x,y,s=0){let n=Math.imul(x+173+s,374761393)^Math.imul(y-97+s,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967295}
 function key(x,y){return x+','+y}
 function inBounds(x,y){return x>=0&&y>=0&&x<MAP&&y<MAP}
 function terrain(x,y){
+ if(player.inVault)return x>=78&&x<=82&&y>=78&&y<=82?'grass':'mountain';
  if(!inBounds(x,y))return'mountain';
+ if(x>=50&&x<=56&&y>=39&&y<=45)return'grass';
  if((x<2||y<2||x>MAP-3||y>MAP-3))return'mountain';
  const h=hash(Math.floor(x/3),Math.floor(y/3),11);
  if(h<.09)return'water';
@@ -139,8 +145,9 @@ function terrain(x,y){
  return'grass'
 }
 function naturalObject(x,y){
- if(terrain(x,y)!=='grass'||depleted.has(key(x,y)))return null;
+ if(player.inVault||terrain(x,y)!=='grass'||depleted.has(key(x,y)))return null;
  if(Math.abs(x-48)<4&&Math.abs(y-48)<4)return null;
+ if(Math.abs(x-53)<4&&Math.abs(y-42)<4)return null;
  const r=hash(x,y,27);
  if(r<.095)return'tree';
  if(r<.125)return'rock';
@@ -149,17 +156,24 @@ function naturalObject(x,y){
  return null
 }
 function objectAt(x,y){
+ if(player.inVault){
+  if(x===80&&y===78&&!player.relicClaimed)return'relic';
+  if(x===80&&y===82)return'exit';
+  return null
+ }
  const k=key(x,y),b=built.get(k);
  if(b)return b;
  if(x===npc.x&&y===npc.y)return'npc';
+ if(x===53&&y===42)return'shrine';
  return naturalObject(x,y)
 }
 function solid(x,y){
- if(!inBounds(Math.floor(x),Math.floor(y)))return true;
- const t=terrain(Math.floor(x),Math.floor(y));
- if(t==='water'||t==='mountain')return true;
- const o=objectAt(Math.floor(x),Math.floor(y));
- return o==='tree'||o==='rock'||o==='cabin'||o==='camp'
+ const tx=Math.floor(x),ty=Math.floor(y);
+ if(player.inVault)return tx<=78||tx>=82||ty<=78||ty>=82;
+ if(!inBounds(tx,ty))return true;
+ const t=terrain(tx,ty);if(t==='water'||t==='mountain')return true;
+ const o=objectAt(tx,ty);
+ return o==='tree'||o==='rock'||o==='cabin'||o==='camp'||o==='shrine'
 }
 function load(){
  try{
@@ -186,6 +200,8 @@ function updatePanels(){
  $('xp').textContent=player.xp+' / '+(player.level*50);$('gold').textContent=player.gold;
  for(const k of ['wood','stone','berries','herbs'])$(k).textContent=player[k];
  $('buildCount').textContent=player.builds.length;$('raiderCount').textContent=player.kills;
+ $('potionCount').textContent=player.potions||0;$('potion').textContent='🧪 '+(player.potions||0)+' POTION';
+ $('gearName').textContent=player.bossDefeated?'Echo Blade +'+(player.weaponLevel||1):'Trail Blade';
  selectedClass=player.characterClass||selectedClass;
  $('checkpoint').textContent=player.checkpoint?.name||'Starting Camp';
  $('className').textContent=classes[selectedClass]?.label||'Warrior';
@@ -210,7 +226,7 @@ function nearbyObject(){
  if(Math.hypot(npc.x+.5-player.x,npc.y+.5-player.y)<2.5)return{label:'Juniper is nearby. Press E to talk.'};
  options.sort((a,b)=>a.d-b.d);
  if(!options.length)return null;
- const labels={tree:'Tree — press E to gather wood.',rock:'Rock — press E to gather stone.',berry:'Berry bush — press E to pick berries.',flower:'Wild herbs — press E to gather herbs.',camp:'Your camp — a safe place to return to.',campfire:'Campfire — warm light in the woods.',cabin:'Cabin — your little home.',garden:'Berry patch — a garden to tend.',sign:'Trail sign — a marker you built.'};
+ const labels={tree:'Tree — press E to gather wood.',rock:'Rock — press E to gather stone.',berry:'Berry bush — press E to pick berries.',flower:'Wild herbs — press E to gather herbs.',camp:'Your camp — a safe place to return to.',campfire:'Campfire — warm light in the woods.',cabin:'Cabin — your little home.',garden:'Berry patch — a garden to tend.',sign:'Trail sign — a marker you built.',shrine:'Echo Shrine — the vault is sealed in old magic.'};
  return{label:labels[options[0].o]||'Something on the trail.'}
 }
 function talk(){
@@ -239,21 +255,42 @@ function harvest(x,y,o){
  if(o==='flower'){const n=1+Math.floor(hash(x,y,10)*2);player.herbs+=n;say('You gathered '+n+' herbs. They smell like rain and old records.')}
  addXp(3);updatePanels();save()
 }
+function enterVault(){
+ player.returnPoint={x:player.x,y:player.y,angle:viewAngle};player.inVault=true;player.x=80.5;player.y=81.5;viewAngle=-Math.PI/2;raiders.length=0;
+ say('The Echo Vault opens. The Static King is guarding an old Tape House relic.');updatePanels();save()
+}
+function leaveVault(){
+ const p=player.returnPoint||{x:53.5,y:43,angle:-Math.PI/2};player.inVault=false;player.x=p.x;player.y=p.y;viewAngle=p.angle;raiders.length=0;
+ say('You step back into the Tape Lands. Your vault progress is saved.');updatePanels();save()
+}
+function usePotion(){
+ if(!player.potions){say('You are out of healing potions. Brew one with 2 berries and 1 herb.');return}
+ const max=classes[player.characterClass||'warrior'].maxHealth;
+ if(player.health>=max){say('Your hearts are already full. Save the potion for later.');return}
+ player.potions--;player.health=Math.min(max,player.health+3);say('Potion used. You recovered up to 3 hearts.');updatePanels();save()
+}
+function brewPotion(){
+ if(player.berries<2||player.herbs<1){say('A potion needs 2 berries and 1 herb.');return}
+ player.berries-=2;player.herbs--;player.potions=(player.potions||0)+1;say('You brewed a healing potion.');updatePanels();save()
+}
 function interact(){
+ if(player.inVault){
+  if(Math.hypot(80.5-player.x,82.5-player.y)<2.2){leaveVault();return}
+  if(player.bossDefeated&&Math.hypot(80.5-player.x,78.5-player.y)<2){player.relicClaimed=true;player.gold+=15;addXp(35);say('You found the lost mixtape in the vault chest! Juniper will want to hear this.');updatePanels();save();return}
+  say(player.bossDefeated?'The sealed chest is open. The vault exit is behind you.':'The Static King stands between you and the vault chest.');return
+ }
+ if(Math.hypot(53.5-player.x,42.5-player.y)<2.3){enterVault();return}
  if(Math.hypot(npc.x+.5-player.x,npc.y+.5-player.y)<=2.1){talk();return}
  let best=null;
  for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++){
-  const wx=Math.floor(player.x)+x,wy=Math.floor(player.y)+y,o=objectAt(wx,wy);
-  const d=Math.hypot(wx+.5-player.x,wy+.5-player.y);
+  const wx=Math.floor(player.x)+x,wy=Math.floor(player.y)+y,o=objectAt(wx,wy),d=Math.hypot(wx+.5-player.x,wy+.5-player.y);
   if(o&&['tree','rock','berry','flower'].includes(o)&&d<=1.65&&(!best||d<best.d))best={x:wx,y:wy,o,d}
  }
  if(best){harvest(best.x,best.y,best.o);return}
  const build=[...built.entries()].map(([k,type])=>{const [x,y]=k.split(',').map(Number);return{x,y,type,d:Math.hypot(x+.5-player.x,y+.5-player.y)}}).filter(b=>b.d<=2.25).sort((a,b)=>a.d-b.d)[0];
  if(build){
-  if(['camp','campfire','cabin'].includes(build.type)){
-   player.checkpoint={x:player.x,y:player.y,name:build.type==='cabin'?'Your Cabin':build.type==='campfire'?'Campfire':'Starting Camp'};
-   save();updatePanels();say('Save point set: '+player.checkpoint.name+'. If you fall, you will wake here.')
-  } else say('A little piece of home. Keep exploring, or build something beside it.');
+  if(['camp','campfire','cabin'].includes(build.type)){player.checkpoint={x:player.x,y:player.y,name:build.type==='cabin'?'Your Cabin':build.type==='campfire'?'Campfire':'Starting Camp'};save();updatePanels();say('Save point set: '+player.checkpoint.name+'. If you fall, you will wake here.')}
+  else say('A little piece of home. Keep exploring, or build something beside it.');
   return
  }
  say('Nothing close enough to use. Walk up to a tree, rock, berry bush, person, or save point.')
@@ -290,6 +327,10 @@ function move(dx,dy,dt){
  target=null
 }
 function spawnRaiders(){
+ if(player.inVault){
+  if(!player.bossDefeated&&!raiders.some(s=>s.kind==='boss'))raiders.push({id:'static-king',x:80.5,y:79.5,kind:'boss',hp:10,maxHp:10,cool:0,phase:0});
+  return
+ }
  const sx=Math.floor(player.x-COLS/2)-2,sy=Math.floor(player.y-ROWS/2)-2;
  for(let y=sy;y<sy+ROWS+4;y++)for(let x=sx;x<sx+COLS+4;x++){
   if(!inBounds(x,y)||terrain(x,y)!=='grass'||naturalObject(x,y)||built.has(key(x,y))||deadRaiders.has(key(x,y)))continue;
@@ -304,11 +345,16 @@ function attack(){
  const fx=Math.cos(viewAngle),fy=Math.sin(viewAngle);
  for(const s of raiders){const dx=s.x-player.x,dy=s.y-player.y,d=Math.hypot(dx,dy),ahead=(dx*fx+dy*fy)/Math.max(.001,d);
   if(d<dist&&ahead>.35){targetRaider=s;dist=d}}
- if(!targetRaider){say('No Tape Raider is in range. Move closer or line up a spell or arrow.');return}
- targetRaider.hp-=stats.damage;targetRaider.flash=.18;
- const name=targetRaider.kind==='bruiser'?'Amp Bruiser':targetRaider.kind==='runner'?'Riff Runner':'Tape Raider';
- say(targetRaider.hp?'You hit the '+name+'! Keep fighting.':name+' chased off! You pocketed salvage and gold.');
- if(targetRaider.hp<=0){deadRaiders.add(targetRaider.id);raiders.splice(raiders.indexOf(targetRaider),1);player.kills++;player.gold+=targetRaider.kind==='bruiser'?12:targetRaider.kind==='runner'?4:7;player.wood+=targetRaider.kind==='bruiser'?2:1;addXp(18);updatePanels();save()}
+ if(!targetRaider){say('No Raider is in range. Face an enemy and attack.');return}
+ targetRaider.hp-=stats.damage+(player.weaponLevel||0);targetRaider.flash=.18;
+ const name=targetRaider.kind==='boss'?'the Static King':targetRaider.kind==='bruiser'?'Amp Bruiser':targetRaider.kind==='runner'?'Riff Runner':'Tape Raider';
+ say(targetRaider.hp?'You hit '+name+'! Keep fighting.':name+' is defeated!');
+ if(targetRaider.hp<=0){
+  raiders.splice(raiders.indexOf(targetRaider),1);
+  if(targetRaider.kind==='boss'){player.bossDefeated=true;player.weaponLevel=(player.weaponLevel||0)+1;player.gold+=50;addXp(150);say('The Static King falls! You earned the Echo Blade +1 and 50 gold. Claim the mixtape from the chest.')}
+  else{deadRaiders.add(targetRaider.id);player.kills++;player.gold+=targetRaider.kind==='bruiser'?12:targetRaider.kind==='runner'?4:7;player.wood+=targetRaider.kind==='bruiser'?2:1;addXp(18)}
+  updatePanels();save()
+ }
 }
 function hurt(){
  if(invuln>0)return;
@@ -383,6 +429,7 @@ function drawMini(){
  const mw=94,mh=70,x=W-mw-10,y=10;ctx.fillStyle='#11121ce8';ctx.fillRect(x,y,mw,mh);ctx.strokeStyle='#f8efd977';ctx.strokeRect(x,y,mw,mh);
  for(let iy=0;iy<17;iy++)for(let ix=0;ix<23;ix++){const wx=Math.floor(player.x)-11+ix,wy=Math.floor(player.y)-8+iy,t=terrain(wx,wy);ctx.fillStyle=t==='water'?'#347287':t==='mountain'?'#55515b':t==='sand'?'#b49b65':'#527b43';ctx.fillRect(x+ix*4,y+iy*4,4,4)}
  ctx.fillStyle='#ff6c97';ctx.fillRect(x+46,y+33,4,4);ctx.fillStyle='#ffd56d';if(Math.abs(npc.x-player.x)<15&&Math.abs(npc.y-player.y)<12)ctx.fillRect(x+(npc.x-Math.floor(player.x)+11)*4,y+(npc.y-Math.floor(player.y)+8)*4,4,4)
+ if(!player.inVault){ctx.fillStyle='#cf9cff';ctx.fillRect(x+(53-Math.floor(player.x)+11)*4,y+(42-Math.floor(player.y)+8)*4,4,4)}
 }
 function rayHit(rayX,rayY){
  let mx=Math.floor(player.x),my=Math.floor(player.y),side=0,dist=24;
@@ -402,6 +449,7 @@ function wallColor(hit){
  if(hit.o==='tree')return['#315c39','#396c40','#244c33'];
  if(hit.o==='rock')return['#6b6870','#8a8589','#504e59'];
  if(hit.o==='cabin')return['#87573a','#a8764f','#5c3a34'];
+ if(hit.o==='shrine'||player.inVault)return['#5d526c','#8b7a9d','#3c344b'];
  if(hit.o==='camp'||hit.o==='campfire')return['#b7603e','#f2a34e','#70402f'];
  if(hit.t==='water')return['#34738a','#58a1ad','#285669'];
  if(hit.t==='mountain')return['#6b6973','#89838b','#4e4b55'];
@@ -416,6 +464,8 @@ function drawWall(hit,x,w,horizon,zbuf,index){
  const shade=Math.max(.22,1-dist/22)*(hit.side===1?.78:1),tex=hit.wallX;
  const c=base[tex<.18||tex>.82?2:tex<.5?0:1];
  ctx.fillStyle=shadeColor(c,shade);ctx.fillRect(x,top,w+1,wallH);
+ if(player.inVault){ctx.fillStyle=shadeColor('#ba88ff',shade*.72);if(tex>.2&&tex<.8)ctx.fillRect(x,top+wallH*.42,w+1,wallH*.05)}
+ if(hit.o==='shrine'){ctx.fillStyle=shadeColor('#d8c3f0',shade);ctx.fillRect(x,top+wallH*.2,w+1,wallH*.08);ctx.fillStyle=shadeColor('#6b4b82',shade);ctx.fillRect(x,top+wallH*.62,w+1,wallH*.12)}
  if(hit.o==='tree'){
   ctx.fillStyle=shadeColor('#1c412e',shade*.95);ctx.fillRect(x,top,w+1,wallH*.28);
   ctx.fillStyle=shadeColor('#507b48',shade);if(tex>.22&&tex<.72)ctx.fillRect(x,top+wallH*.08,w+1,wallH*.14);
@@ -446,11 +496,13 @@ function cameraProject(x,y){
 }
 function billboard(x,y,type,kind){
  const p=cameraProject(x,y);if(p.y<=.12||p.y>22)return;
- const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.72:type==='raider'?.75:.48));
+ const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.72:type==='raider'?(kind?.kind==='boss'?1.05:.75):type==='relic'?.52:.48));
  const width=height*(type==='resource'?.36:.48),bottom=H*.56,col=Math.max(0,Math.min(175,Math.floor(screen/4)));
  if(p.y>zBuffer[col]+.25)return;
  ctx.save();ctx.translate(screen,bottom);
- if(type==='resource'){
+ if(type==='relic'){
+  ctx.fillStyle='#392a43';ctx.fillRect(-width*.6,-height*.65,width*1.2,height*.65);ctx.fillStyle='#8b5bb0';ctx.fillRect(-width*.52,-height*.58,width*1.04,height*.5);ctx.fillStyle='#ffd56d';ctx.fillRect(-width*.42,-height*.48,width*.84,height*.12);ctx.fillStyle='#efe4cf';ctx.fillRect(-width*.28,-height*.3,width*.56,height*.08)
+ }else if(type==='resource'){
   if(kind==='berry'){ctx.fillStyle='#356d43';ctx.fillRect(-width*.45,-height*.48,width*.9,height*.4);ctx.fillStyle='#e96b9d';ctx.fillRect(-width*.25,-height*.45,width*.18,height*.16);ctx.fillRect(width*.12,-height*.31,width*.16,height*.14)}
   else if(kind==='flower'){ctx.fillStyle='#347744';ctx.fillRect(-2,-height*.35,4,height*.33);ctx.fillStyle='#ffcb73';ctx.fillRect(-width*.23,-height*.49,width*.46,height*.2)}
   else{ctx.fillStyle='#657259';ctx.fillRect(-width*.42,-height*.38,width*.84,height*.34);ctx.fillStyle='#aba9a3';ctx.fillRect(-width*.19,-height*.47,width*.38,height*.13)}
@@ -463,7 +515,7 @@ function billboard(x,y,type,kind){
   ctx.fillStyle=isNpc?'#315c3e':'#372746';ctx.fillRect(-width*.42,-height*.98,width*.84,height*.12);
   ctx.fillStyle='#f4ead2';ctx.fillRect(-width*.15,-height*.84,width*.08,height*.035);ctx.fillRect(width*.08,-height*.84,width*.08,height*.035);
   if(isNpc){ctx.fillStyle='#ffd56d';ctx.font='bold '+Math.max(10,height*.13)+'px monospace';ctx.textAlign='center';ctx.fillText('JUNIPER',0,-height*1.06)}
-  else{ctx.fillStyle='#271e2b';ctx.fillRect(-width*.45,-height*1.07,width*.9,Math.max(3,height*.06));ctx.fillStyle='#ff6c97';ctx.fillRect(-width*.45,-height*1.07,width*.9*Math.max(0,kind.hp/(kind.kind==='bruiser'?3:kind.kind==='runner'?1:2)),Math.max(3,height*.06));ctx.fillStyle='#fff0d8';ctx.fillRect(width*.38,-height*.55,width*.12,height*.32)}
+  else{ctx.fillStyle='#271e2b';ctx.fillRect(-width*.45,-height*1.07,width*.9,Math.max(3,height*.06));ctx.fillStyle='#ff6c97';ctx.fillRect(-width*.45,-height*1.07,width*.9*Math.max(0,kind.hp/(kind.kind==='boss'?kind.maxHp:kind.kind==='bruiser'?3:kind.kind==='runner'?1:2)),Math.max(3,height*.06));ctx.fillStyle='#fff0d8';ctx.fillRect(width*.38,-height*.55,width*.12,height*.32)}
  }
  ctx.restore()
 }
@@ -511,6 +563,7 @@ function drawFirstPerson(){
  for(let i=0;i<rays;i++){const camera=2*i/rays-1,rx=fx+planeX*camera,ry=fy+planeY*camera,hit=rayHit(rx,ry);drawWall(hit,i*strip,strip,horizon,zBuffer,i)}
  const sprites=[];if(Math.hypot(npc.x+.5-player.x,npc.y+.5-player.y)<18)sprites.push({x:npc.x+.5,y:npc.y+.5,type:'npc'});
  for(const s of raiders)sprites.push({x:s.x,y:s.y,type:'raider',kind:s});
+ if(player.inVault&&!player.relicClaimed)sprites.push({x:80.5,y:78.5,type:'relic'});
  const px=Math.floor(player.x),py=Math.floor(player.y);
  for(let y=py-10;y<=py+10;y++)for(let x=px-10;x<=px+10;x++){const o=naturalObject(x,y);if(['berry','flower','rock'].includes(o))sprites.push({x:x+.5,y:y+.5,type:'resource',kind:o})}
  sprites.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
@@ -552,7 +605,7 @@ function chooseClass(name){
 document.querySelectorAll('[data-class]').forEach(b=>b.addEventListener('click',()=>chooseClass(b.dataset.class)));
 function start(){started=true;$('welcome').classList.add('hidden');updatePanels();say('Welcome, '+classes[player.characterClass||'warrior'].label+'. Juniper is just north of your camp.');}
 $('enter').addEventListener('click',start);
-$('interact').addEventListener('click',interact);$('attack').addEventListener('click',attack);
+$('interact').addEventListener('click',interact);$('attack').addEventListener('click',attack);$('potion').addEventListener('click',usePotion);$('craftPotion').addEventListener('click',brewPotion);
 $('dialogAccept').addEventListener('click',acceptOrTurnIn);$('dialogClose').addEventListener('click',()=>$('dialogue').hidden=true);
 document.addEventListener('keydown',e=>{
  const k=e.key.toLowerCase();
@@ -560,6 +613,7 @@ document.addEventListener('keydown',e=>{
  keys.add(e.key===' '?'Space':e.key);
  if(k==='e'&&!e.repeat&&started)interact();
  if(e.key===' '&&!e.repeat&&started)attack();
+ if(k==='q'&&!e.repeat&&started)usePotion();
 });
 document.addEventListener('keyup',e=>{keys.delete(e.key);keys.delete(e.key===' '?'Space':e.key)});
 window.addEventListener('blur',()=>{keys.clear();Object.keys(held).forEach(k=>held[k]=false)});
