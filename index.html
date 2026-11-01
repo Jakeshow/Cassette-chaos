@@ -47,7 +47,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="tagline">CASSETTE CHAOS<br>OPEN WORLD / VOL. 01</div>
 </header>
 <div class="intro">
-<div><h1>Welcome to the <em>Tape Lands</em></h1><p>Wander the woods, meet the locals, gather what you need, build a home base, take on quests, and chase those slimes out of the forest. The world keeps going at your pace.</p></div>
+<div><h1>Welcome to the <em>Tape Lands</em></h1><p>Wander the woods, meet the locals, gather what you need, build a home base, take on quests, and take on the tape raiders who are shaking down the forest trails. The world keeps going at your pace.</p></div>
 </div>
 <main class="layout">
 <section class="game-shell" aria-label="Cassette Chaos RPG">
@@ -63,7 +63,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <button class="empty" tabindex="-1"></button><button data-move="up" aria-label="Move up">▲</button><button class="empty" tabindex="-1"></button>
 <button data-move="left" aria-label="Move left">◀</button><button data-move="down" aria-label="Move down">▼</button><button data-move="right" aria-label="Move right">▶</button>
 </div>
-<div class="action-row"><button id="interact">E • INTERACT</button><button id="attack">⚔ BONK A SLIME</button></div>
+<div class="action-row"><button id="interact">E • INTERACT</button><button id="attack">⚔ FIGHT</button></div>
 </div>
 <p class="hint">Tap the map or use the arrows • E / INTERACT gathers, talks, and turns in quests • Space / BONK attacks • The world saves on this device</p>
 </section>
@@ -71,7 +71,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <section class="panel"><h2>🎒 Your pack</h2><div class="bag">
 <div class="item">🪵 Wood <b id="wood">0</b></div><div class="item">🪨 Stone <b id="stone">0</b></div>
 <div class="item">🫐 Berries <b id="berries">0</b></div><div class="item">🌿 Herbs <b id="herbs">0</b></div>
-<div class="item">🏠 Builds <b id="buildCount">1</b></div><div class="item">☠ Slimes <b id="slimeCount">0</b></div>
+<div class="item">🏠 Builds <b id="buildCount">1</b></div><div class="item">☠ Raiders <b id="raiderCount">0</b></div>
 </div><h3>What’s nearby?</h3><p id="nearby">Find Juniper by the clearing. She has work for a new adventurer.</p><p class="feed" id="message" role="status">A quiet forest, a strange crackle in the air, and a trail leading north.</p></section>
 <section class="panel"><h2>📜 Quests</h2><div id="quests"><p>Talk to Juniper to get your first quest.</p></div></section>
 <section class="panel"><h2>🛠 Build & craft</h2>
@@ -87,7 +87,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 </div>
 <div class="overlay" id="welcome">
 <div class="card"><span class="ribbon">TAPE HOUSE RECORDS PRESENTS</span><img src="assets/tape-house-logo.jpg" alt=""><h2>THE TAPE LANDS</h2>
-<p>An open world built from cassettes, campfires, and the people you meet along the trail. Take it easy: gather, make a home, follow the quests, and deal with a few noisy slimes.</p>
+<p>An open world built from cassettes, campfires, and the people you meet along the trail. Take it easy: gather, make a home, follow the quests, and deal with a few noisy raiders.</p>
 <p><b>Move:</b> WASD / arrows or tap a destination. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
 <button class="primary" id="enter">▶ START WANDERING</button></div>
 </div>
@@ -101,7 +101,7 @@ const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 const TILE=32,COLS=22,ROWS=15,W=704,H=480,MAP=96;
 const SAVE_KEY='tapehouse-tape-lands-save-v1';
-const keys=new Set(),depleted=new Set(),built=new Map(),deadSlimes=new Set(),slimes=[];
+const keys=new Set(),depleted=new Set(),built=new Map(),deadRaiders=new Set(),raiders=[];
 const held={up:false,down:false,left:false,right:false};
 const initial={
  x:48.5,y:48.5,level:1,xp:0,health:5,gold:0,wood:0,stone:0,berries:0,herbs:0,
@@ -112,7 +112,7 @@ let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=
 const npc={x:48,y:46,name:'Juniper'};
 const questDefs=[
  {id:'supply',title:'A Welcome Mix',text:'Juniper needs a few basics for the camp: 5 wood, 3 stone, and 2 berries.',need:{wood:5,stone:3,berries:2},xp:55,gold:18},
- {id:'slimes',title:'Static in the Pines',text:'Three slimes are making the north trail crackle. Send them packing.',need:{kills:3},xp:90,gold:30},
+ {id:'raiders',title:'Static in the Pines',text:'Three Tape Raiders have been shaking down travelers on the north trail. Beat them back and bring the trail quiet again.',need:{kills:3},xp:90,gold:30},
  {id:'builder',title:'Make It Yours',text:'Build a cabin or a berry patch anywhere in the Tape Lands.',need:{builds:1},xp:75,gold:25}
 ];
 function hash(x,y,s=0){let n=Math.imul(x+173+s,374761393)^Math.imul(y-97+s,668265263);n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967295}
@@ -155,13 +155,13 @@ function load(){
   if(!saved)return;
   player={...initial,...saved,accepted:saved.accepted||[],done:saved.done||[],builds:saved.builds||[]};
   for(const k of saved.depleted||[])depleted.add(k);
-  for(const k of saved.deadSlimes||[])deadSlimes.add(k);
+  for(const k of saved.deadRaiders||[])deadRaiders.add(k);
   for(const b of player.builds)built.set(key(b.x,b.y),b.type);
  }catch(_){player={...initial,accepted:[],done:[],builds:[]}}
  if(!built.has('48,50')){built.set('48,50','camp');player.builds.push({x:48,y:50,type:'camp'})}
 }
 function save(){
- try{localStorage.setItem(SAVE_KEY,JSON.stringify({...player,depleted:[...depleted],deadSlimes:[...deadSlimes]}))}catch(_){}
+ try{localStorage.setItem(SAVE_KEY,JSON.stringify({...player,depleted:[...depleted],deadRaiders:[...deadRaiders]}))}catch(_){}
 }
 function say(t){$('message').textContent=t}
 function addXp(n){
@@ -173,7 +173,7 @@ function updatePanels(){
  $('level').textContent=player.level;$('health').textContent='♥ '.repeat(Math.max(0,player.health))||'☠';
  $('xp').textContent=player.xp+' / '+(player.level*50);$('gold').textContent=player.gold;
  for(const k of ['wood','stone','berries','herbs'])$(k).textContent=player[k];
- $('buildCount').textContent=player.builds.length;$('slimeCount').textContent=player.kills;
+ $('buildCount').textContent=player.builds.length;$('raiderCount').textContent=player.kills;
  const active=player.accepted.map(id=>questDefs.find(q=>q.id===id)).filter(Boolean);
  const cards=active.map(q=>{
   const isDone=required(q);
@@ -183,8 +183,8 @@ function updatePanels(){
  $('quests').innerHTML=cards||'<p>Talk to Juniper near the starting camp. She has a job to get you going.</p>';
  const bx=Math.floor(player.x),by=Math.floor(player.y),near=nearbyObject();
  $('nearby').textContent=near?near.label:'You hear wind in the trees. Tap a spot to wander over.';
- const count=slimes.length;
- $('slimeCount').textContent=player.kills+(count?' ('+count+' nearby)':'');
+ const count=raiders.length;
+ $('raiderCount').textContent=player.kills+(count?' ('+count+' nearby)':'');
 }
 function nearbyObject(){
  const options=[];
@@ -265,32 +265,33 @@ function move(dx,dy,dt){
  if(tileAt(player.x,ny)==='.')player.y=ny;
  target=null
 }
-function spawnSlimes(){
+function spawnRaiders(){
  const sx=Math.floor(player.x-COLS/2)-2,sy=Math.floor(player.y-ROWS/2)-2;
  for(let y=sy;y<sy+ROWS+4;y++)for(let x=sx;x<sx+COLS+4;x++){
-  if(!inBounds(x,y)||terrain(x,y)!=='grass'||naturalObject(x,y)||built.has(key(x,y))||deadSlimes.has(key(x,y)))continue;
-  if(hash(x,y,91)<.012&&!slimes.some(s=>s.id===key(x,y))&&Math.hypot(x-player.x,y-player.y)>3)slimes.push({id:key(x,y),x:x+.5,y:y+.5,hp:2,cool:0,phase:hash(x,y,93)*7})
+  if(!inBounds(x,y)||terrain(x,y)!=='grass'||naturalObject(x,y)||built.has(key(x,y))||deadRaiders.has(key(x,y)))continue;
+  if(hash(x,y,91)<.012&&!raiders.some(s=>s.id===key(x,y))&&Math.hypot(x-player.x,y-player.y)>3){const r=hash(x,y,92),kind=r<.22?'bruiser':r<.58?'runner':'scout';raiders.push({id:key(x,y),x:x+.5,y:y+.5,kind,hp:kind==='bruiser'?3:kind==='runner'?1:2,cool:0,phase:hash(x,y,93)*7})}
  }
 }
 function attack(){
  if(attackCool>0)return;
  attackCool=.42;
- let targetSlime=null,dist=1.75;
- for(const s of slimes){const d=Math.hypot(s.x-player.x,s.y-player.y);if(d<dist){targetSlime=s;dist=d}}
- if(!targetSlime){say('You swing at the air. No slime in bonking range.');return}
- targetSlime.hp--;targetSlime.flash=.18;
- say(targetSlime.hp?'Bonk! The slime wobble is losing its confidence.':'Slime defeated! It dropped 5 gold and a couple berries.');
- if(targetSlime.hp<=0){deadSlimes.add(targetSlime.id);slimes.splice(slimes.indexOf(targetSlime),1);player.kills++;player.gold+=5;player.berries+=2;addXp(18);updatePanels();save()}
+ let targetRaider=null,dist=1.75;
+ for(const s of raiders){const d=Math.hypot(s.x-player.x,s.y-player.y);if(d<dist){targetRaider=s;dist=d}}
+ if(!targetRaider){say('No Tape Raider is close enough to fight. Step closer and swing again.');return}
+ targetRaider.hp--;targetRaider.flash=.18;
+ const name=targetRaider.kind==='bruiser'?'Amp Bruiser':targetRaider.kind==='runner'?'Riff Runner':'Tape Raider';
+ say(targetRaider.hp?'You land a hit on the '+name+'. Keep swinging!':name+' chased off! You pocketed salvage and gold.');
+ if(targetRaider.hp<=0){deadRaiders.add(targetRaider.id);raiders.splice(raiders.indexOf(targetRaider),1);player.kills++;player.gold+=targetRaider.kind==='bruiser'?12:targetRaider.kind==='runner'?4:7;player.wood+=targetRaider.kind==='bruiser'?2:1;addXp(18);updatePanels();save()}
 }
 function hurt(){
  if(invuln>0)return;
- invuln=1.1;player.health--;say('A slime booped you. Hearts: '+player.health+'.');
+ invuln=1.1;player.health--;say('A raider booped you. Hearts: '+player.health+'.');
  if(player.health<=0){player.x=player.home.x;player.y=player.home.y;player.health=5;player.gold=Math.max(0,player.gold-5);say('You wake back at camp. Nothing is lost but 5 gold. Take a breath, then head back out.')}
  updatePanels();save()
 }
-function updateSlimes(dt){
- spawnSlimes();
- for(const s of slimes){
+function updateRaiders(dt){
+ spawnRaiders();
+ for(const s of raiders){
   s.cool=Math.max(0,s.cool-dt);s.flash=Math.max(0,(s.flash||0)-dt);s.phase+=dt*4;
   const dx=player.x-s.x,dy=player.y-s.y,d=Math.hypot(dx,dy);
   if(d<6&&d>1.05){const step=Math.min(1.1*dt,d-1);const nx=s.x+dx/d*step,ny=s.y+dy/d*step;if(tileAt(nx,s.y)==='.')s.x=nx;if(tileAt(s.x,ny)==='.')s.y=ny}
@@ -330,7 +331,7 @@ function drawTile(x,y,sx,sy){
   ctx.fillStyle='#3b2935';ctx.fillRect(px+8,py+24,16,5);ctx.fillStyle='#d27a57';ctx.fillRect(px+10,py+8,12,15);ctx.fillStyle='#4d925e';ctx.fillRect(px+8,py+4,16,7);ctx.fillStyle='#f1c69a';ctx.fillRect(px+12,py+10,8,7);ctx.fillStyle='#25212a';ctx.fillRect(px+12,py+14,2,2);ctx.fillRect(px+18,py+14,2,2);ctx.fillStyle='#ffd56d';ctx.fillRect(px+23,py+1,8,8);ctx.fillStyle='#312337';ctx.font='bold 8px monospace';ctx.fillText('!',px+25,py+8)
  }
 }
-function drawSlime(s,sx,sy){
+function drawRaider(s,sx,sy){
  const x=(s.x-camX)*TILE,y=(s.y-camY)*TILE+Math.sin(s.phase)*2;
  ctx.fillStyle='#17201888';ctx.fillRect(x-10,y+10,20,4);
  ctx.fillStyle=s.flash>0?'#fff4da':'#a56bd2';ctx.fillRect(x-11,y-7,22,15);ctx.fillRect(x-8,y-11,16,6);ctx.fillStyle='#e8a4eb';ctx.fillRect(x-7,y-7,5,4);ctx.fillRect(x+3,y-7,5,4);ctx.fillStyle='#32243d';ctx.fillRect(x-5,y-5,2,3);ctx.fillRect(x+4,y-5,2,3)
@@ -351,7 +352,7 @@ function drawMini(){
 function draw(){
  ctx.clearRect(0,0,W,H);camX=Math.max(0,Math.min(MAP-COLS,Math.floor(player.x-COLS/2)));camY=Math.max(0,Math.min(MAP-ROWS,Math.floor(player.y-ROWS/2)));
  for(let sy=0;sy<ROWS;sy++)for(let sx=0;sx<COLS;sx++)drawTile(camX+sx,camY+sy,sx,sy);
- for(const s of slimes){const sx=Math.floor(s.x)-camX,sy=Math.floor(s.y)-camY;if(sx>=0&&sy>=0&&sx<COLS&&sy<ROWS)drawSlime(s,sx,sy)}
+ for(const s of raiders){const sx=Math.floor(s.x)-camX,sy=Math.floor(s.y)-camY;if(sx>=0&&sy>=0&&sx<COLS&&sy<ROWS)drawRaider(s,sx,sy)}
  drawPlayer();drawMini();
  const night=(Math.sin(clock*.025)+1)/2;
  if(night>.76){ctx.fillStyle='rgba(19,22,43,'+((night-.76)*.42)+')';ctx.fillRect(0,0,W,H)}
@@ -370,7 +371,7 @@ function frame(t){
   if(dx||dy)move(dx,dy,dt);
   else if(target){const tx=target.x+.5,ty=target.y+.5,dd=Math.hypot(tx-player.x,ty-player.y);if(dd<.16)target=null;else move((tx-player.x)/dd,(ty-player.y)/dd,dt)}
   attackCool=Math.max(0,attackCool-dt);invuln=Math.max(0,invuln-dt);
-  updateSlimes(dt);saveClock+=dt;if(saveClock>5){saveClock=0;save()}
+  updateRaiders(dt);saveClock+=dt;if(saveClock>5){saveClock=0;save()}
   updatePanels()
  }
  draw();requestAnimationFrame(frame)
@@ -401,7 +402,7 @@ function load(){
  }catch(_){}
  if(!player.builds.some(b=>b.type==='camp'))player.builds.push({x:48,y:50,type:'camp'});
  for(const b of player.builds)built.set(key(b.x,b.y),b.type);
- try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');(s?.depleted||[]).forEach(k=>depleted.add(k));(s?.deadSlimes||[]).forEach(k=>deadSlimes.add(k))}catch(_){}
+ try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');(s?.depleted||[]).forEach(k=>depleted.add(k));(s?.deadRaiders||[]).forEach(k=>deadRaiders.add(k))}catch(_){}
 }
 load();updatePanels();requestAnimationFrame(frame);
 })();
