@@ -49,7 +49,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="tagline">CASSETTE CHAOS<br>OPEN WORLD / VOL. 01</div>
 </header>
 <div class="intro">
-<div><h1>Welcome to the <em>Tape Lands</em></h1><p>Wander the woods, meet the locals, gather what you need, build a home base, take on quests, and take on the tape raiders who are shaking down the forest trails. The world keeps going at your pace.</p></div>
+<div><h1>Welcome to the <em>Tape Lands</em></h1><p>Explore a blocky fantasy wilderness in first person. Wander, gather, build a camp, meet the locals, and follow quests at your own pace. Gear up for the Echo Vault and its human raiders.</p></div>
 </div>
 <main class="layout">
 <section class="game-shell" aria-label="Cassette Chaos RPG">
@@ -93,7 +93,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 </div>
 <div class="overlay" id="welcome">
 <div class="card"><span class="ribbon">TAPE HOUSE RECORDS PRESENTS</span><img src="assets/tape-house-logo.jpg" alt=""><h2>THE TAPE LANDS</h2>
-<p>An open world built from cassettes, campfires, and the people you meet along the trail. Take it easy: gather, make a home, follow the quests, and deal with a few noisy raiders.</p>
+<p>A blocky, open fantasy world built from cassettes, campfires, and the people you meet along the trail. Explore, build, find the Echo Shrine, and grow into the adventure at your own pace.</p>
 <p><b>Move:</b> Up / W. <b>Turn:</b> Left / Right or A / D. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
 <p><b>Choose your free adventurer:</b></p><div class="class-picks" role="group" aria-label="Choose your character">
 <button class="class-pick selected" data-class="warrior">⚔ WARRIOR<small>Sturdy, close-range</small></button>
@@ -146,7 +146,7 @@ function terrain(x,y){
 }
 function naturalObject(x,y){
  if(player.inVault||terrain(x,y)!=='grass'||depleted.has(key(x,y)))return null;
- if(Math.abs(x-48)<4&&Math.abs(y-48)<4)return null;
+ if(Math.abs(x-48)<7&&Math.abs(y-48)<7)return null;
  if(Math.abs(x-53)<4&&Math.abs(y-42)<4)return null;
  const r=hash(x,y,27);
  if(r<.095)return'tree';
@@ -484,6 +484,7 @@ function drawWall(hit,x,w,horizon,zbuf,index){
 }
 function sceneBackground(horizon){
  const sky=ctx.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#17283e');sky.addColorStop(.72,'#7196a0');sky.addColorStop(1,'#d0b47c');ctx.fillStyle=sky;ctx.fillRect(0,0,W,horizon);
+ for(let i=0;i<5;i++){const cx=((i*173+clock*5)%W),cy=30+(i%3)*28;ctx.fillStyle='rgba(232,237,220,.55)';ctx.fillRect(cx,cy,48,7);ctx.fillRect(cx+10,cy-5,24,6);ctx.fillRect(cx+41,cy+2,18,5)}
  const ground=ctx.createLinearGradient(0,horizon,0,H);ground.addColorStop(0,'#60784a');ground.addColorStop(.2,'#42663b');ground.addColorStop(1,'#233d2b');ctx.fillStyle=ground;ctx.fillRect(0,horizon,W,H-horizon);
  ctx.fillStyle='#7e7350';ctx.beginPath();ctx.moveTo(W*.46,horizon);ctx.lineTo(W*.54,horizon);ctx.lineTo(W*.92,H);ctx.lineTo(W*.08,H);ctx.closePath();ctx.fill();
  for(let y=horizon+8,step=8;y<H;y+=step,step*=1.24){ctx.fillStyle='rgba(201,186,125,.16)';ctx.fillRect(0,y,W,1)}
@@ -496,7 +497,7 @@ function cameraProject(x,y){
 }
 function billboard(x,y,type,kind){
  const p=cameraProject(x,y);if(p.y<=.12||p.y>22)return;
- const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.72:type==='raider'?(kind?.kind==='boss'?1.05:.75):type==='relic'?.52:.48));
+ const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.34:type==='raider'?(kind?.kind==='boss'?.62:.38):type==='relic'?.40:.38));
  const width=height*(type==='resource'?.36:.48),bottom=H*.56,col=Math.max(0,Math.min(175,Math.floor(screen/4)));
  if(p.y>zBuffer[col]+.25)return;
  ctx.save();ctx.translate(screen,bottom);
@@ -526,6 +527,12 @@ function drawMini(){
 }
 function drawFantasyHorizon(horizon){
  const drift=((viewAngle+Math.PI/2)*115)%W;
+ ctx.fillStyle='#738678';ctx.beginPath();ctx.moveTo(0,horizon+7);
+ for(let x=0;x<=W+40;x+=40)ctx.lineTo(x,horizon-16-hash(Math.floor(x/40),2,61)*46);
+ ctx.lineTo(W,horizon+7);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#536c5a';ctx.beginPath();ctx.moveTo(0,horizon+9);
+ for(let x=0;x<=W+32;x+=32)ctx.lineTo(x,horizon-6-hash(Math.floor(x/32),5,62)*26);
+ ctx.lineTo(W,horizon+9);ctx.closePath();ctx.fill();
  ctx.fillStyle='#3b5c4c';
  for(let i=-2;i<27;i++){
   const x=((i*42-drift)%W+W)%W-16,ht=18+hash(i,1,47)*28;
