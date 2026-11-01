@@ -460,7 +460,9 @@ function shadeColor(hex,amount){
  return'rgb('+r+','+g+','+b+')'
 }
 function drawWall(hit,x,w,horizon,zbuf,index){
- const dist=hit.dist,wallH=Math.min(H*2,H/dist),top=horizon-wallH/2,base=wallColor(hit);
+ const dist=hit.dist;
+ if(['tree','rock','berry','flower'].includes(hit.o)){zbuf[index]=dist;return}
+ const wallH=Math.min(H*2,H/dist),top=horizon-wallH/2,base=wallColor(hit);
  const shade=Math.max(.22,1-dist/22)*(hit.side===1?.78:1),tex=hit.wallX;
  const c=base[tex<.18||tex>.82?2:tex<.5?0:1];
  ctx.fillStyle=shadeColor(c,shade);ctx.fillRect(x,top,w+1,wallH);
@@ -496,11 +498,16 @@ function cameraProject(x,y){
 }
 function billboard(x,y,type,kind){
  const p=cameraProject(x,y);if(p.y<=.12||p.y>22)return;
- const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.19:type==='raider'?(kind?.kind==='boss'?.34:.21):type==='relic'?.28:.30));
- const width=height*(type==='resource'?.36:.48),bottom=H*.56,col=Math.max(0,Math.min(175,Math.floor(screen/4)));
+ const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.19:type==='raider'?(kind?.kind==='boss'?.34:.21):type==='tree'?.78:type==='relic'?.28:type==='resource'?.26:.30));
+ const width=height*(type==='tree'?.70:type==='resource'?.36:.48),bottom=H*.56,col=Math.max(0,Math.min(175,Math.floor(screen/4)));
  if(p.y>zBuffer[col]+.25)return;
  ctx.save();ctx.translate(screen,bottom);
- if(type==='relic'){
+ if(type==='tree'){
+  ctx.fillStyle='#17201888';ctx.fillRect(-width*.38,-3,width*.76,Math.max(3,height*.06));
+  ctx.fillStyle='#65452f';ctx.fillRect(-width*.10,-height*.36,width*.20,height*.36);
+  ctx.fillStyle='#244b35';ctx.fillRect(-width*.36,-height*.74,width*.72,height*.42);ctx.fillRect(-width*.26,-height*.92,width*.52,height*.34);ctx.fillRect(-width*.46,-height*.61,width*.92,height*.25);
+  ctx.fillStyle='#3f7544';ctx.fillRect(-width*.22,-height*.85,width*.35,height*.12);ctx.fillRect(-width*.34,-height*.61,width*.30,height*.10);ctx.fillRect(width*.08,-height*.55,width*.28,height*.09);ctx.fillStyle='#74a851';ctx.fillRect(-width*.18,-height*.81,width*.10,height*.06);ctx.fillRect(width*.20,-height*.59,width*.08,height*.06)
+ }else if(type==='relic'){
   ctx.fillStyle='#392a43';ctx.fillRect(-width*.6,-height*.65,width*1.2,height*.65);ctx.fillStyle='#8b5bb0';ctx.fillRect(-width*.52,-height*.58,width*1.04,height*.5);ctx.fillStyle='#ffd56d';ctx.fillRect(-width*.42,-height*.48,width*.84,height*.12);ctx.fillStyle='#efe4cf';ctx.fillRect(-width*.28,-height*.3,width*.56,height*.08)
  }else if(type==='resource'){
   if(kind==='berry'){ctx.fillStyle='#356d43';ctx.fillRect(-width*.45,-height*.48,width*.9,height*.4);ctx.fillStyle='#e96b9d';ctx.fillRect(-width*.25,-height*.45,width*.18,height*.16);ctx.fillRect(width*.12,-height*.31,width*.16,height*.14)}
@@ -571,7 +578,7 @@ function drawFirstPerson(){
  for(const s of raiders)sprites.push({x:s.x,y:s.y,type:'raider',kind:s});
  if(player.inVault&&!player.relicClaimed)sprites.push({x:80.5,y:78.5,type:'relic'});
  const px=Math.floor(player.x),py=Math.floor(player.y);
- for(let y=py-10;y<=py+10;y++)for(let x=px-10;x<=px+10;x++){const o=naturalObject(x,y);if(['berry','flower','rock'].includes(o))sprites.push({x:x+.5,y:y+.5,type:'resource',kind:o})}
+ for(let y=py-10;y<=py+10;y++)for(let x=px-10;x<=px+10;x++){const o=naturalObject(x,y);if(o==='tree')sprites.push({x:x+.5,y:y+.5,type:'tree'});else if(['berry','flower','rock'].includes(o))sprites.push({x:x+.5,y:y+.5,type:'resource',kind:o})}
  sprites.sort((a,b)=>Math.hypot(b.x-player.x,b.y-player.y)-Math.hypot(a.x-player.x,a.y-player.y));
  for(const s of sprites)billboard(s.x,s.y,s.type,s.kind);
  ctx.strokeStyle='#fff2d5aa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W/2-7,H*.43);ctx.lineTo(W/2+7,H*.43);ctx.moveTo(W/2,H*.43-7);ctx.lineTo(W/2,H*.43+7);ctx.stroke();
