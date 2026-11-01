@@ -120,6 +120,7 @@ const initial={
 };
 let player={...initial,accepted:[],done:[],builds:[]};
 let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=0,invuln=0,target=null,lastDir={x:0,y:-1},viewAngle=-Math.PI/2;
+let zBuffer=[];
 const npc={x:48,y:46,name:'Juniper'};
 const questDefs=[
  {id:'supply',title:'A Welcome Mix',text:'Juniper needs a few basics for the camp: 5 wood, 3 stone, and 2 berries.',need:{wood:5,stone:3,berries:2},xp:55,gold:18},
