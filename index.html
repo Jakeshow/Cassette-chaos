@@ -49,7 +49,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="tagline">CASSETTE CHAOS<br>OPEN WORLD / VOL. 01</div>
 </header>
 <div class="intro">
-<div><h1>Welcome to the <em>Tape Lands</em></h1><p>Explore a blocky fantasy wilderness in first person. Wander, gather, build a camp, meet the locals, and follow quests at your own pace. Gear up for the Echo Vault and its human raiders.</p></div>
+<div><h1>Welcome to the <em>Tape Lands</em></h1><p>A first-person pixel adventure through open meadows, forests, and old Tape House ruins. Wander off the trail, gather, build a camp, meet the locals, and follow quests at your own pace.</p></div>
 </div>
 <main class="layout">
 <section class="game-shell" aria-label="Cassette Chaos RPG">
@@ -93,7 +93,7 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 </div>
 <div class="overlay" id="welcome">
 <div class="card"><span class="ribbon">TAPE HOUSE RECORDS PRESENTS</span><img src="assets/tape-house-logo.jpg" alt=""><h2>THE TAPE LANDS</h2>
-<p>A blocky, open fantasy world built from cassettes, campfires, and the people you meet along the trail. Explore, build, find the Echo Shrine, and grow into the adventure at your own pace.</p>
+<p>A roomy first-person adventure through the Tape Lands: open grass, scattered trees, distant ruins, and little people to meet along the way. Choose a role, wander anywhere, build a camp, and find your own adventure.</p>
 <p><b>Move:</b> Up / W. <b>Turn:</b> Left / Right or A / D. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
 <p><b>Choose your free adventurer:</b></p><div class="class-picks" role="group" aria-label="Choose your character">
 <button class="class-pick selected" data-class="warrior">⚔ WARRIOR<small>Sturdy, close-range</small></button>
@@ -149,10 +149,10 @@ function naturalObject(x,y){
  if(Math.abs(x-48)<7&&Math.abs(y-48)<7)return null;
  if(Math.abs(x-53)<4&&Math.abs(y-42)<4)return null;
  const r=hash(x,y,27);
- if(r<.095)return'tree';
- if(r<.125)return'rock';
- if(r<.155)return'berry';
- if(r<.171)return'flower';
+ if(r<.042)return'tree';
+ if(r<.078)return'rock';
+ if(r<.105)return'berry';
+ if(r<.126)return'flower';
  return null
 }
 function objectAt(x,y){
@@ -486,8 +486,7 @@ function sceneBackground(horizon){
  const sky=ctx.createLinearGradient(0,0,0,horizon);sky.addColorStop(0,'#17283e');sky.addColorStop(.72,'#7196a0');sky.addColorStop(1,'#d0b47c');ctx.fillStyle=sky;ctx.fillRect(0,0,W,horizon);
  for(let i=0;i<5;i++){const cx=((i*173+clock*5)%W),cy=30+(i%3)*28;ctx.fillStyle='rgba(232,237,220,.55)';ctx.fillRect(cx,cy,48,7);ctx.fillRect(cx+10,cy-5,24,6);ctx.fillRect(cx+41,cy+2,18,5)}
  const ground=ctx.createLinearGradient(0,horizon,0,H);ground.addColorStop(0,'#60784a');ground.addColorStop(.2,'#42663b');ground.addColorStop(1,'#233d2b');ctx.fillStyle=ground;ctx.fillRect(0,horizon,W,H-horizon);
- ctx.fillStyle='#7e7350';ctx.beginPath();ctx.moveTo(W*.46,horizon);ctx.lineTo(W*.54,horizon);ctx.lineTo(W*.92,H);ctx.lineTo(W*.08,H);ctx.closePath();ctx.fill();
- for(let y=horizon+8,step=8;y<H;y+=step,step*=1.24){ctx.fillStyle='rgba(201,186,125,.16)';ctx.fillRect(0,y,W,1)}
+ for(let i=0;i<95;i++){const x=hash(i,3,53)*W,y=horizon+hash(i,7,54)*(H-horizon),size=1+hash(i,9,55)*3;ctx.fillStyle=i%3===0?'rgba(190,197,125,.35)':'rgba(34,66,43,.28)';ctx.fillRect(x,y,size,size*.55)}
  drawFantasyHorizon(horizon);
  for(let i=0;i<28;i++){const x=hash(i,Math.floor(clock*2),33)*W,y=horizon+hash(i,2,34)*(H-horizon);ctx.fillStyle=i%2?'#7da15a55':'#bac47a44';ctx.fillRect(x,y,2+hash(i,8,35)*5,1)}
 }
@@ -497,7 +496,7 @@ function cameraProject(x,y){
 }
 function billboard(x,y,type,kind){
  const p=cameraProject(x,y);if(p.y<=.12||p.y>22)return;
- const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.34:type==='raider'?(kind?.kind==='boss'?.62:.38):type==='relic'?.40:.38));
+ const screen=W/2*(1+p.x/p.y),height=Math.min(H*1.2,H/p.y*(type==='npc'?.19:type==='raider'?(kind?.kind==='boss'?.34:.21):type==='relic'?.28:.30));
  const width=height*(type==='resource'?.36:.48),bottom=H*.56,col=Math.max(0,Math.min(175,Math.floor(screen/4)));
  if(p.y>zBuffer[col]+.25)return;
  ctx.save();ctx.translate(screen,bottom);
