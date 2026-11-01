@@ -92,7 +92,7 @@
               <span class="ribbon" id="overlayRibbon">TAPE HOUSE ARCADE PRESENTS</span>
               <span class="tape-mark" id="overlayIcon" aria-hidden="true">📼</span>
               <h2 id="overlayTitle">CASSETTE CHAOS!</h2>
-              <p id="overlayText">Save the mixtape! Catch good cassettes, grab coffee power-ups, and avoid broken tapes. Miss 3 and the set is over.</p>
+              <p id="overlayText">Keep the DIY set alive as long as you can. Build a catch streak, grab wild power-ups, and dodge broken tapes. There is no final level—when the deck runs out of hearts, it stages an encore.</p>
               <button class="primary" id="mainButton" type="button">▶ PLAY THE GAME</button>
               <span class="tiny-note" id="overlayHint">DRAG TO MOVE • OR USE ← → / A D</span>
             </div>
@@ -119,10 +119,13 @@
         <li><span class="legend-icon" aria-hidden="true">📼</span><span><strong>Good cassette • +10</strong><span class="help">Catch it before it hits the floor.</span></span></li>
         <li><span class="legend-icon" aria-hidden="true">✨</span><span><strong>Gold tape • +50</strong><span class="help">Rare find at the bottom of the bargain bin.</span></span></li>
         <li><span class="legend-icon" aria-hidden="true">☕</span><span><strong>Coffee • double points</strong><span class="help">Seven glorious seconds of caffeine.</span></span></li>
+        <li><span class="legend-icon" aria-hidden="true">🧲</span><span><strong>Magnet • pull in tapes</strong><span class="help">Catch tapes nearby for a few seconds.</span></span></li>
+        <li><span class="legend-icon" aria-hidden="true">⭐</span><span><strong>Patch • temporary shield</strong><span class="help">Block a broken tape while the glow lasts.</span></span></li>
+        <li><span class="legend-icon" aria-hidden="true">⏪</span><span><strong>Rewind • clear the field</strong><span class="help">Sweep hazards away and take a breath.</span></span></li>
         <li><span class="legend-icon" aria-hidden="true">💥</span><span><strong>Broken tape • lose a life</strong><span class="help">Don't let it ruin your set.</span></span></li>
       </ul>
-      <div class="how"><p><strong>📱 PHONE:</strong> Drag your finger across the game, or hold the left/right buttons.</p><p><strong>⌨️ COMPUTER:</strong> Move your mouse, use ← → or A / D. Press Space or P to pause.</p><p><strong>THE RULE:</strong> Miss a regular cassette or catch a broken one and you lose a life. You start with three.</p></div>
-      <span class="sticker">★ DIY UNTIL THE TAPE RUNS OUT ★</span>
+      <div class="how"><p><strong>📱 PHONE:</strong> Drag your finger across the game, or hold the left/right buttons.</p><p><strong>⌨️ COMPUTER:</strong> Move your mouse, use ← → or A / D. Press Space or P to pause.</p><p><strong>THE SET:</strong> This is endless. Miss a cassette or catch a broken one and you lose a heart. When all three are gone, an encore refills them with a small score penalty. Build five-catch streaks for bigger points.</p></div>
+      <span class="sticker">★ NO FINAL TRACK • KEEP THE SET GOING ★</span>
     </aside>
   </main>
   <footer>
@@ -148,7 +151,7 @@
   const colors = ['#ff6c97','#89e4bf','#ffd56d','#9da8ff','#feaa79'];
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let mode = 'ready';
-  let score = 0, lives = 3, best = 0, elapsed = 0, spawnClock = 0, streak = 0, coffeeTime = 0;
+  let score = 0, lives = 3, best = 0, elapsed = 0, spawnClock = 0, streak = 0, coffeeTime = 0, shieldTime = 0, magnetTime = 0;
   let items = [], bursts = [], last = 0, animId = 0, audio = null, soundOn = true;
   let steer = 0, keyboardSteer = 0, buttonSteer = 0;
   let deckX = W / 2, targetX = deckX;
@@ -159,7 +162,7 @@
     ui.score.textContent = String(score).padStart(4,'0');
     ui.best.textContent = String(Math.max(best,score)).padStart(4,'0');
     ui.lives.textContent = '♥ '.repeat(lives).trim() || '× × ×';
-    ui.power.textContent = coffeeTime > 0 ? '☕ 2X SCORE ' + Math.ceil(coffeeTime) + 's' : (mode === 'running' ? 'STREAK ×' + streak : 'READY TO ROCK');
+    ui.power.textContent = coffeeTime > 0 ? '☕ 2X SCORE ' + Math.ceil(coffeeTime) + 's' : magnetTime > 0 ? '🧲 MAGNET ' + Math.ceil(magnetTime) + 's' : shieldTime > 0 ? '⭐ SHIELD ' + Math.ceil(shieldTime) + 's' : (mode === 'running' ? 'STREAK ×' + streak : 'READY TO ROCK');
   }
   function setOverlay(ribbon,icon,title,description,button,hint) {
     ui.ribbon.textContent=ribbon; ui.icon.textContent=icon; ui.title.textContent=title;
@@ -169,17 +172,17 @@
   function hideOverlay() { ui.overlay.classList.add('hidden'); }
   function saveBest() { if (score>best) { best=score; try { localStorage.setItem('tapehouse_cassette_chaos_best',String(best)); } catch (_) {} } }
   function start() {
-    score=0; lives=3; elapsed=0; spawnClock=0; streak=0; coffeeTime=0;
+    score=0; lives=3; elapsed=0; spawnClock=0; streak=0; coffeeTime=0; shieldTime=0; magnetTime=0;
     items=[]; bursts=[]; deckX=W/2; targetX=deckX; buttonSteer=keyboardSteer=steer=0;
     mode='running'; hideOverlay(); ui.pause.disabled=false; ui.pause.textContent='Ⅱ PAUSE'; display();
     sound(392,'triangle',0.08,.055); sound(587,'triangle',0.11,.04,.095);
   }
   function gameOver() {
-    mode='over'; ui.pause.disabled=true; saveBest(); display();
-    sound(247,'sawtooth',0.17,.065); sound(196,'triangle',0.18,.055,.11);
-    setOverlay('THE SIDE A IS OVER','💔','GAME OVER',
-      'You rescued '+score+' points worth of mixtapes! Your personal best: '+best+'. One more spin?',
-      '↻ TRY AGAIN','NO QUARTERS REQUIRED • ALWAYS FREE');
+    // No game over in the endless set: the deck catches its breath and keeps going.
+    lives=3; streak=0; score=Math.max(0,score-100); shieldTime=3; coffeeTime=0; magnetTime=0;
+    items=[]; saveBest(); display();
+    sound(247,'sawtooth',0.17,.065); sound(392,'triangle',0.16,.055,.12);
+    burst(W/2,deckY-80,'ENCORE! −100','#ffd56d');
   }
   function pause() {
     if (mode==='running') {
@@ -241,8 +244,8 @@
   hold($('leftButton'),-1); hold($('rightButton'),1);
   function spawn() {
     const r=Math.random();
-    const type = r<.70?'tape':r<.85?'broken':r<.94?'gold':'coffee';
-    const radius= type==='coffee'?20:29;
+    const type = r<.57?'tape':r<.72?'broken':r<.81?'gold':r<.87?'coffee':r<.92?'magnet':r<.97?'shield':'rewind';
+    const radius= ['coffee','magnet','shield','rewind'].includes(type)?20:29;
     const x=rand(radius+9,W-radius-9);
     items.push({type,x,y:-45,rot:rand(-.3,.3),vx:rand(-.9,.9),phase:rand(0,7),color:colors[Math.floor(rand(0,colors.length))],speed:rand(.85,1.15),radius});
   }
@@ -251,15 +254,24 @@
   }
   function hit(item) {
     if (item.type==='broken') {
-      lives--; streak=0; sound(125,'sawtooth',.19,.10); burst(item.x,deckY-25,'-1 LIFE','#ff6c97');
-      if(lives<=0){gameOver();return;}
+      if (shieldTime>0) { shieldTime=0; sound(700,'sine',.08,.06); burst(item.x,deckY-25,'SHIELD BLOCK!','#89e4bf'); }
+      else { lives--; streak=0; sound(125,'sawtooth',.19,.10); burst(item.x,deckY-25,'-1 HEART','#ff6c97'); if(lives<=0){gameOver();return;} }
     } else if (item.type==='coffee') {
       coffeeTime=7; sound(570,'sine',.07,.07); sound(900,'sine',.11,.06,.065); burst(item.x,deckY-20,'2× COFFEE!','#ffd56d');
+    } else if (item.type==='magnet') {
+      magnetTime=8; sound(520,'sine',.07,.06); burst(item.x,deckY-20,'MAGNET ON!','#9da8ff');
+    } else if (item.type==='shield') {
+      shieldTime=7; sound(650,'triangle',.08,.06); burst(item.x,deckY-20,'PATCH SHIELD!','#89e4bf');
+    } else if (item.type==='rewind') {
+      items=items.filter(other=>other.type==='tape'||other.type==='gold'||other.type==='coffee');
+      sound(330,'sawtooth',.18,.06); burst(item.x,deckY-20,'REWIND!','#ff6c97');
     } else {
-      const points=(item.type==='gold'?50:10)*(coffeeTime>0?2:1);
+      const base=item.type==='gold'?50:10;
+      const multiplier=1+Math.floor(streak/5);
+      const points=base*(coffeeTime>0?2:1)*multiplier;
       score+=points; streak++;
       sound(item.type==='gold'?760:440+Math.min(streak,7)*35,'triangle',.085,.045);
-      burst(item.x,deckY-20,'+'+points,item.type==='gold'?'#ffd56d':'#89e4bf');
+      burst(item.x,deckY-20,'+'+points+(streak%5===0?' STREAK!':''),item.type==='gold'?'#ffd56d':'#89e4bf');
     }
     display();
   }
@@ -273,26 +285,27 @@
   }
   function update(dt) {
     if (mode!=='running') return;
-    elapsed+=dt; coffeeTime=Math.max(0,coffeeTime-dt);
+    elapsed+=dt; coffeeTime=Math.max(0,coffeeTime-dt); shieldTime=Math.max(0,shieldTime-dt); magnetTime=Math.max(0,magnetTime-dt);
     steer=clamp(keyboardSteer+buttonSteer,-1,1);
     if(steer) targetX+=steer*370*dt;
     targetX=clamp(targetX,48,W-48);
     deckX+=(targetX-deckX)*Math.min(1,dt*22);
     spawnClock+=dt;
-    const spawnEvery=Math.max(.56,1.12-elapsed*.003);
+    const spawnEvery=Math.max(.72,1.12-Math.min(elapsed,80)*.003);
     if(spawnClock>=spawnEvery){spawnClock-=spawnEvery;spawn();}
     for(let i=items.length-1;i>=0;i--) {
       const it=items[i];
-      it.y+=(149+Math.min(elapsed*1.15,140))*it.speed*dt;
+      it.y+=(149+Math.min(elapsed*.55,70))*it.speed*dt;
       it.phase+=dt*2.2;
+      if(magnetTime>0&&(it.type==='tape'||it.type==='gold')) it.x+=clamp(deckX-it.x,-110,110)*dt*2.4;
       // Catch while the falling object's lower edge overlaps the tape deck's slot.
-      if(it.y>=deckY-27 && it.y<=deckY+14 && Math.abs(it.x-deckX)<(it.type==='coffee'?59:61)) {
+      if(it.y>=deckY-27 && it.y<=deckY+14 && Math.abs(it.x-deckX)<(['coffee','magnet','shield','rewind'].includes(it.type)?59:61)) {
         items.splice(i,1); hit(it); if(mode==='over') return; continue;
       }
       if(it.y>H+35){items.splice(i,1);missed(it);if(mode==='over')return;}
     }
     for(let i=bursts.length-1;i>=0;i--) {bursts[i].life-=dt*1.2;bursts[i].y-=dt*36;if(bursts[i].life<=0)bursts.splice(i,1);}
-    ui.power.textContent=coffeeTime>0?'☕ 2X SCORE '+Math.ceil(coffeeTime)+'s':'STREAK ×'+streak;
+    ui.power.textContent=coffeeTime>0?'☕ 2X SCORE '+Math.ceil(coffeeTime)+'s':magnetTime>0?'🧲 MAGNET '+Math.ceil(magnetTime)+'s':shieldTime>0?'⭐ SHIELD '+Math.ceil(shieldTime)+'s':'STREAK ×'+streak;
   }
   function roundRect(x,y,w,h,r,fill,stroke,line=2) {
     ctx.beginPath();ctx.roundRect(x,y,w,h,r);
@@ -321,7 +334,7 @@
   }
   function drawTape(it) {
     ctx.save();ctx.translate(it.x,it.y);ctx.rotate(it.rot+Math.sin(it.phase)*.045);
-    if(it.type==='coffee') {drawCoffee();ctx.restore();return;}
+    if(['coffee','magnet','shield','rewind'].includes(it.type)) {drawSpecial(it.type);ctx.restore();return;}
     const gold=it.type==='gold',broken=it.type==='broken';
     const body=broken?'#aab1ba':(gold?'#ffd56d':it.color);
     ctx.shadowBlur=gold?22:0;ctx.shadowColor='#ffd56d';
@@ -345,14 +358,12 @@
     if(gold){ctx.fillStyle='#fff5d0';ctx.font='bold 18px monospace';ctx.fillText('✦',31,-15);}
     ctx.textAlign='left';ctx.restore();
   }
-  function drawCoffee() {
-    ctx.shadowBlur=12;ctx.shadowColor='#ffd56d88';
-    roundRect(-16,-16,32,32,4,'#ffe1a3','#513a3a',3);
-    ctx.shadowBlur=0;
-    ctx.fillStyle='#49333c';ctx.beginPath();ctx.ellipse(0,-15,16,5,0,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle='#ffe1a3';ctx.lineWidth=5;ctx.beginPath();ctx.arc(15,0,10,-Math.PI/2,Math.PI/2);ctx.stroke();
-    ctx.fillStyle='#50393d';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('2X',0,7);ctx.textAlign='left';
-    ctx.strokeStyle='#f7efda';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-8,-22);ctx.quadraticCurveTo(-13,-28,-7,-35);ctx.moveTo(5,-22);ctx.quadraticCurveTo(1,-29,8,-35);ctx.stroke();
+  function drawSpecial(type) {
+    const styles={coffee:['#ffe1a3','#49333c','☕'],magnet:['#b9c0ff','#27213b','M'],shield:['#89e4bf','#203b36','★'],rewind:['#ff91ad','#412235','↶']};
+    const [fill,ink,label]=styles[type];
+    ctx.shadowBlur=12;ctx.shadowColor=fill+'88';
+    roundRect(-18,-18,36,36,7,fill,'#332638',3);ctx.shadowBlur=0;
+    ctx.fillStyle=ink;ctx.font='bold 20px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,0,1);ctx.textBaseline='alphabetic';ctx.textAlign='left';
   }
   function drawDeck(t) {
     ctx.save();ctx.translate(deckX,deckY);
@@ -366,6 +377,7 @@
     ctx.fillStyle='#382937';ctx.beginPath();ctx.arc(-36,48,4,0,7);ctx.arc(36,48,4,0,7);ctx.fill();
     // An on-deck neon arrow shows the active capture area.
     if(!reduceMotion){ctx.globalAlpha=.35+.18*Math.sin(t*6);ctx.fillStyle='#89e4bf';ctx.fillRect(-30,-15,60,3);}
+    if(shieldTime>0){ctx.globalAlpha=.55;ctx.strokeStyle='#89e4bf';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,19,61,39,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;}
     ctx.restore();
   }
   function draw(t) {
