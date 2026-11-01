@@ -33,6 +33,8 @@ h1{font-size:clamp(28px,5vw,48px);line-height:.95;letter-spacing:-.08em;text-tra
 .recipe{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:6px 0;padding:6px;background:#171623;border-radius:4px;font-size:10px}.recipe button{min-height:32px;padding:4px 8px;font-size:10px;white-space:nowrap}
 .feed{min-height:38px;color:var(--cream)!important;background:#171623;border-radius:4px;padding:7px!important;border:1px solid #463947}
 .overlay{position:fixed;inset:0;z-index:10;background:#100d16dd;display:flex;align-items:center;justify-content:center;padding:18px}.overlay.hidden{display:none}.card{max-width:440px;width:100%;padding:20px;background:var(--cream);color:#271f2b;border:4px solid #1a1520;box-shadow:7px 8px 0 var(--pink);text-align:center;transform:rotate(-1deg)}.card img{width:110px;height:110px;object-fit:cover;border:3px solid #271f2b;box-shadow:4px 4px 0 var(--pink);border-radius:8px}.ribbon{display:block;color:#28634d;font-weight:900;font-size:10px;letter-spacing:.12em;margin-bottom:8px}.card h2{font-size:clamp(29px,7vw,42px);line-height:.94;letter-spacing:-.08em;margin:13px 0 8px}.card p{font-size:12px;color:#4b414b;line-height:1.55}.primary{width:100%;min-height:48px;margin-top:10px;background:var(--pink);color:#201720;border:3px solid #231927;box-shadow:4px 5px 0 #322634;font-weight:1000;text-transform:uppercase}
+.class-picks{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0}.class-pick{border:2px solid #6a5668;background:#f4e8d5;color:#312738;padding:7px 4px;font-size:10px;font-weight:900;line-height:1.3}.class-pick.selected{border-color:#24684c;background:#d6eddb;box-shadow:0 0 0 2px #24684c}.class-pick small{display:block;font-weight:500;margin-top:4px}.premium-note{border:2px dashed #725c6f;padding:8px;margin-top:10px;font-size:10px;color:#4b414b}.premium-note b{color:#69446e}.lock-chip{display:inline-block;background:#403144;color:#ffe28b;padding:2px 5px;border-radius:3px;font-size:9px;margin:2px}
+
 .dialogue{position:fixed;z-index:8;inset:0;background:#100d16a8;display:grid;place-items:center;padding:15px}.dialogue[hidden]{display:none}.dialog-card{width:min(420px,100%);background:var(--cream);color:#271f2b;border:4px solid #1a1520;box-shadow:6px 7px 0 var(--pink);padding:18px}.dialog-card h2{margin:0;color:#28634d}.dialog-card p{font-size:12px;line-height:1.55}.dialog-actions{display:flex;gap:8px}.dialog-actions button{flex:1;min-height:42px;border:2px solid #241a2a;background:var(--pink);color:#241a2a;font-weight:900}.dialog-actions button:last-child{background:#d4c8b7}
 footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-top:12px;font-size:11px;line-height:1.6;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}footer a{color:var(--yellow)}
 @media(max-width:850px){.layout{grid-template-columns:1fr}.side{grid-template-columns:1fr 1fr}.side .panel:last-child{grid-column:1/-1}.intro{display:block}.intro p{margin-top:5px}}
@@ -65,13 +67,14 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 </div>
 <div class="action-row"><button id="interact">E • INTERACT</button><button id="attack">⚔ FIGHT</button></div>
 </div>
-<p class="hint">Tap the map or use the arrows • E / INTERACT gathers, talks, and turns in quests • Space / BONK attacks • The world saves on this device</p>
+<p class="hint">Tap the map or use the arrows • E / INTERACT gathers, talks, and turns in quests • Space / BONK attacks • The world saves on this device. Interact with campfires or cabins to set a save point</p>
 </section>
 <aside class="side">
 <section class="panel"><h2>🎒 Your pack</h2><div class="bag">
 <div class="item">🪵 Wood <b id="wood">0</b></div><div class="item">🪨 Stone <b id="stone">0</b></div>
 <div class="item">🫐 Berries <b id="berries">0</b></div><div class="item">🌿 Herbs <b id="herbs">0</b></div>
 <div class="item">🏠 Builds <b id="buildCount">1</b></div><div class="item">☠ Raiders <b id="raiderCount">0</b></div>
+<div class="item">🧭 Save point <b id="checkpoint">Camp</b></div><div class="item">🎭 Class <b id="className">Warrior</b></div>
 </div><h3>What’s nearby?</h3><p id="nearby">Find Juniper by the clearing. She has work for a new adventurer.</p><p class="feed" id="message" role="status">A quiet forest, a strange crackle in the air, and a trail leading north.</p></section>
 <section class="panel"><h2>📜 Quests</h2><div id="quests"><p>Talk to Juniper to get your first quest.</p></div></section>
 <section class="panel"><h2>🛠 Build & craft</h2>
@@ -89,6 +92,12 @@ footer{color:var(--muted);border-top:2px dashed #705769;margin-top:20px;padding-
 <div class="card"><span class="ribbon">TAPE HOUSE RECORDS PRESENTS</span><img src="assets/tape-house-logo.jpg" alt=""><h2>THE TAPE LANDS</h2>
 <p>An open world built from cassettes, campfires, and the people you meet along the trail. Take it easy: gather, make a home, follow the quests, and deal with a few noisy raiders.</p>
 <p><b>Move:</b> WASD / arrows or tap a destination. <b>Interact:</b> E. <b>Attack:</b> Space.</p>
+<p><b>Choose your free adventurer:</b></p><div class="class-picks" role="group" aria-label="Choose your character">
+<button class="class-pick selected" data-class="warrior">⚔ WARRIOR<small>Sturdy, close-range</small></button>
+<button class="class-pick" data-class="wizard">✨ WIZARD<small>Magic from afar</small></button>
+<button class="class-pick" data-class="ranger">🏹 RANGER<small>Quick, precise</small></button>
+</div>
+<div class="premium-note"><b>TAPE LANDS PLUS</b><br><span class="lock-chip">Bard</span><span class="lock-chip">Tinkerer</span><span class="lock-chip">extra quests</span><span class="lock-chip">more builds</span><br>Optional paid expansion. Stripe checkout still needs to be connected; no payment is taken yet.</div>
 <button class="primary" id="enter">▶ START WANDERING</button></div>
 </div>
 <div class="dialogue" id="dialogue" hidden>
@@ -101,11 +110,13 @@ const canvas=document.getElementById('world'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 const TILE=32,COLS=22,ROWS=15,W=704,H=480,MAP=96;
 const SAVE_KEY='tapehouse-tape-lands-save-v1';
+const classes={warrior:{label:'Warrior',maxHealth:7,range:1.5,damage:2,color:'#ff6c97'},wizard:{label:'Wizard',maxHealth:5,range:4.5,damage:1,color:'#9bc7ff'},ranger:{label:'Ranger',maxHealth:6,range:3.2,damage:1,color:'#89e4bf'}};
+let selectedClass='warrior';
 const keys=new Set(),depleted=new Set(),built=new Map(),deadRaiders=new Set(),raiders=[];
 const held={up:false,down:false,left:false,right:false};
 const initial={
- x:48.5,y:48.5,level:1,xp:0,health:5,gold:0,wood:0,stone:0,berries:0,herbs:0,
- accepted:[],done:[],kills:0,builds:[{x:48,y:50,type:'camp'}],home:{x:48.5,y:48.5}
+ x:48.5,y:48.5,level:1,xp:0,health:7,gold:0,wood:0,stone:0,berries:0,herbs:0,
+ accepted:[],done:[],kills:0,characterClass:'warrior',checkpoint:{x:48.5,y:48.5,name:'Starting Camp'},builds:[{x:48,y:50,type:'camp'}],home:{x:48.5,y:48.5}
 };
 let player={...initial,accepted:[],done:[],builds:[]};
 let started=false,dialogQuest=null,camX=0,camY=0,clock=0,saveClock=0,attackCool=0,invuln=0,target=null,lastDir={x:0,y:1};
@@ -166,7 +177,7 @@ function save(){
 function say(t){$('message').textContent=t}
 function addXp(n){
  player.xp+=n;
- while(player.xp>=player.level*50){player.xp-=player.level*50;player.level++;player.health=Math.min(5,player.health+1);say('LEVEL UP! You reached level '+player.level+'. The forest heard that one.')}
+ while(player.xp>=player.level*50){player.xp-=player.level*50;player.level++;player.health=Math.min(classes[player.characterClass||'warrior'].maxHealth,player.health+1);say('LEVEL UP! You reached level '+player.level+'. The forest heard that one.')}
 }
 function required(q){return Object.entries(q.need).every(([k,v])=>player[k]>=v)}
 function updatePanels(){
@@ -174,6 +185,9 @@ function updatePanels(){
  $('xp').textContent=player.xp+' / '+(player.level*50);$('gold').textContent=player.gold;
  for(const k of ['wood','stone','berries','herbs'])$(k).textContent=player[k];
  $('buildCount').textContent=player.builds.length;$('raiderCount').textContent=player.kills;
+ selectedClass=player.characterClass||selectedClass;
+ $('checkpoint').textContent=player.checkpoint?.name||'Starting Camp';
+ $('className').textContent=classes[selectedClass]?.label||'Warrior';
  const active=player.accepted.map(id=>questDefs.find(q=>q.id===id)).filter(Boolean);
  const cards=active.map(q=>{
   const isDone=required(q);
@@ -233,9 +247,15 @@ function interact(){
   if(o&&['tree','rock','berry','flower'].includes(o)&&d<=1.65&&(!best||d<best.d))best={x:wx,y:wy,o,d}
  }
  if(best){harvest(best.x,best.y,best.o);return}
- const build=[...built.entries()].find(([k])=>{const [x,y]=k.split(',').map(Number);return Math.hypot(x+.5-player.x,y+.5-player.y)<=1.7});
- if(build){say('A little piece of home. Keep exploring, or build something beside it.');return}
- say('Nothing close enough to use. Walk up to a tree, rock, berry bush, person, or structure.')
+ const build=[...built.entries()].map(([k,type])=>{const [x,y]=k.split(',').map(Number);return{x,y,type,d:Math.hypot(x+.5-player.x,y+.5-player.y)}}).filter(b=>b.d<=2.25).sort((a,b)=>a.d-b.d)[0];
+ if(build){
+  if(['camp','campfire','cabin'].includes(build.type)){
+   player.checkpoint={x:player.x,y:player.y,name:build.type==='cabin'?'Your Cabin':build.type==='campfire'?'Campfire':'Starting Camp'};
+   save();updatePanels();say('Save point set: '+player.checkpoint.name+'. If you fall, you will wake here.')
+  } else say('A little piece of home. Keep exploring, or build something beside it.');
+  return
+ }
+ say('Nothing close enough to use. Walk up to a tree, rock, berry bush, person, or save point.')
 }
 function build(type){
  const recipes={campfire:{wood:3,stone:2,name:'campfire'},cabin:{wood:10,stone:5,name:'cabin'},garden:{wood:3,herbs:2,name:'berry patch'},sign:{wood:2,name:'trail sign'}};
@@ -246,7 +266,10 @@ function build(type){
  let spot=null;
  for(const d of dirs){const x=Math.floor(player.x)+d.x,y=Math.floor(player.y)+d.y,k=key(x,y);if(!built.has(k)&&terrain(x,y)==='grass'&&!naturalObject(x,y)&&!(x===npc.x&&y===npc.y)){spot={x,y};break}}
  if(!spot){say('There is no clear grass beside you. Find an open spot and build there.');return}
- keys.forEach(k=>player[k]-=r[k]||0);built.set(key(spot.x,spot.y),type);player.builds.push({...spot,type});addXp(8);say('You built a '+r.name+'. This place is starting to feel like yours.');updatePanels();save()
+ keys.forEach(k=>player[k]-=r[k]||0);built.set(key(spot.x,spot.y),type);player.builds.push({...spot,type});addXp(8);
+ if(type==='campfire'||type==='cabin'){player.checkpoint={x:player.x,y:player.y,name:type==='cabin'?'Your Cabin':'Campfire'};say('You built a '+r.name+' and set it as your save point.')}
+ else say('You built a '+r.name+'. This place is starting to feel like yours.');
+ updatePanels();save()
 }
 function tileAt(px,py){
  const x=Math.floor(px),y=Math.floor(py),t=terrain(x,y);
@@ -275,18 +298,23 @@ function spawnRaiders(){
 function attack(){
  if(attackCool>0)return;
  attackCool=.42;
- let targetRaider=null,dist=1.75;
+ const stats=classes[player.characterClass||'warrior'];
+ let targetRaider=null,dist=stats.range;
  for(const s of raiders){const d=Math.hypot(s.x-player.x,s.y-player.y);if(d<dist){targetRaider=s;dist=d}}
- if(!targetRaider){say('No Tape Raider is close enough to fight. Step closer and swing again.');return}
- targetRaider.hp--;targetRaider.flash=.18;
+ if(!targetRaider){say('No Tape Raider is in range. Move closer or line up a spell or arrow.');return}
+ targetRaider.hp-=stats.damage;targetRaider.flash=.18;
  const name=targetRaider.kind==='bruiser'?'Amp Bruiser':targetRaider.kind==='runner'?'Riff Runner':'Tape Raider';
- say(targetRaider.hp?'You land a hit on the '+name+'. Keep swinging!':name+' chased off! You pocketed salvage and gold.');
+ say(targetRaider.hp?'You hit the '+name+'! Keep fighting.':name+' chased off! You pocketed salvage and gold.');
  if(targetRaider.hp<=0){deadRaiders.add(targetRaider.id);raiders.splice(raiders.indexOf(targetRaider),1);player.kills++;player.gold+=targetRaider.kind==='bruiser'?12:targetRaider.kind==='runner'?4:7;player.wood+=targetRaider.kind==='bruiser'?2:1;addXp(18);updatePanels();save()}
 }
 function hurt(){
  if(invuln>0)return;
- invuln=1.1;player.health--;say('A raider booped you. Hearts: '+player.health+'.');
- if(player.health<=0){player.x=player.home.x;player.y=player.home.y;player.health=5;player.gold=Math.max(0,player.gold-5);say('You wake back at camp. Nothing is lost but 5 gold. Take a breath, then head back out.')}
+ invuln=1.1;player.health--;say('A raider hit you. Hearts: '+player.health+'.');
+ if(player.health<=0){
+  const point=player.checkpoint||{x:48.5,y:48.5,name:'Starting Camp'};
+  player.x=point.x;player.y=point.y;player.health=classes[player.characterClass||'warrior'].maxHealth;player.gold=Math.max(0,player.gold-5);
+  say('You wake at '+point.name+'. You lose 5 gold, and your journey is saved there.')
+ }
  updatePanels();save()
 }
 function updateRaiders(dt){
@@ -340,8 +368,12 @@ function drawPlayer(){
  const x=(player.x-camX)*TILE,y=(player.y-camY)*TILE;
  ctx.fillStyle='#17201899';ctx.fillRect(x-10,y+11,20,4);
  if(invuln>0&&Math.floor(clock*12)%2)ctx.globalAlpha=.45;
- ctx.fillStyle='#292230';ctx.fillRect(x-7,y+4,6,10);ctx.fillRect(x+2,y+4,6,10);ctx.fillStyle='#ff6c97';ctx.fillRect(x-9,y-5,18,12);ctx.fillStyle='#f0cda5';ctx.fillRect(x-6,y-12,12,9);
- ctx.fillStyle='#ffd56d';ctx.fillRect(x-8,y-15,16,5);ctx.fillStyle='#26202b';ctx.fillRect(x-3,y-8,2,2);ctx.fillRect(x+3,y-8,2,2);ctx.fillStyle='#89e4bf';ctx.fillRect(x+7,y-4,4,7);
+ const cl=classes[player.characterClass||'warrior'];
+ ctx.fillStyle='#292230';ctx.fillRect(x-7,y+4,6,10);ctx.fillRect(x+2,y+4,6,10);ctx.fillStyle=cl.color;ctx.fillRect(x-9,y-5,18,12);ctx.fillStyle='#f0cda5';ctx.fillRect(x-6,y-12,12,9);
+ if(player.characterClass==='warrior'){ctx.fillStyle='#ffd56d';ctx.fillRect(x-8,y-15,16,5);ctx.fillStyle='#9ca8b7';ctx.fillRect(x+7,y-4,4,7)}
+ else if(player.characterClass==='wizard'){ctx.fillStyle='#503b7b';ctx.fillRect(x-9,y-17,18,8);ctx.fillStyle='#ffe28b';ctx.fillRect(x-2,y-14,4,3);ctx.fillStyle='#c3ddff';ctx.fillRect(x+8,y-4,3,10)}
+ else {ctx.fillStyle='#79513b';ctx.fillRect(x-8,y-14,16,5);ctx.fillStyle='#593b2c';ctx.fillRect(x-10,y-14,20,3);ctx.fillStyle='#a9d69d';ctx.fillRect(x+8,y-4,5,7)}
+ ctx.fillStyle='#26202b';ctx.fillRect(x-3,y-8,2,2);ctx.fillRect(x+3,y-8,2,2);
  ctx.globalAlpha=1
 }
 function drawMini(){
@@ -376,7 +408,15 @@ function frame(t){
  }
  draw();requestAnimationFrame(frame)
 }
-function start(){started=true;$('welcome').classList.add('hidden');updatePanels();say('Welcome to the Tape Lands. Juniper is just north of your camp.');}
+function chooseClass(name){
+ if(!classes[name])return;
+ player.characterClass=name;selectedClass=name;
+ player.health=Math.min(classes[name].maxHealth,player.health||classes[name].maxHealth);
+ document.querySelectorAll('[data-class]').forEach(b=>b.classList.toggle('selected',b.dataset.class===name));
+ updatePanels();save()
+}
+document.querySelectorAll('[data-class]').forEach(b=>b.addEventListener('click',()=>chooseClass(b.dataset.class)));
+function start(){started=true;$('welcome').classList.add('hidden');updatePanels();say('Welcome, '+classes[player.characterClass||'warrior'].label+'. Juniper is just north of your camp.');}
 $('enter').addEventListener('click',start);
 $('interact').addEventListener('click',interact);$('attack').addEventListener('click',attack);
 $('dialogAccept').addEventListener('click',acceptOrTurnIn);$('dialogClose').addEventListener('click',()=>$('dialogue').hidden=true);
@@ -404,7 +444,7 @@ function load(){
  for(const b of player.builds)built.set(key(b.x,b.y),b.type);
  try{const s=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');(s?.depleted||[]).forEach(k=>depleted.add(k));(s?.deadRaiders||[]).forEach(k=>deadRaiders.add(k))}catch(_){}
 }
-load();updatePanels();requestAnimationFrame(frame);
+load();chooseClass(player.characterClass||'warrior');updatePanels();requestAnimationFrame(frame);
 })();
 </script>
 </body>
