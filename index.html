@@ -541,6 +541,14 @@ function frame(t){
  }
  draw();requestAnimationFrame(frame)
 }
+function chooseClass(name){
+ if(!classes[name])return;
+ player.characterClass=name;selectedClass=name;
+ player.health=Math.min(classes[name].maxHealth,player.health||classes[name].maxHealth);
+ document.querySelectorAll('[data-class]').forEach(b=>b.classList.toggle('selected',b.dataset.class===name));
+ updatePanels();save()
+}
+document.querySelectorAll('[data-class]').forEach(b=>b.addEventListener('click',()=>chooseClass(b.dataset.class)));
 function start(){started=true;$('welcome').classList.add('hidden');updatePanels();say('Welcome, '+classes[player.characterClass||'warrior'].label+'. Juniper is just north of your camp.');}
 $('enter').addEventListener('click',start);
 $('interact').addEventListener('click',interact);$('attack').addEventListener('click',attack);
